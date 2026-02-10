@@ -2,159 +2,131 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Calculator</title>
+<title>Vault</title>
 
 <style>
-body{background:#0b0b0b;font-family:monospace;color:#00ff88;text-align:center}
-#calc{margin-top:60px}
-button{width:70px;height:60px;margin:6px;font-size:18px;border:none;border-radius:12px;background:#161616;color:#00ff88}
-#display{width:300px;height:60px;background:#000;color:#00ff88;font-size:26px;margin-bottom:15px;text-align:right;padding:10px;border-radius:10px}
-.hidden{display:none}
-.box{background:#111;padding:12px;margin:12px;border-radius:12px}
-input{width:70%;padding:10px;margin:5px;background:#000;color:#00ff88;border:none;border-radius:6px}
-.copy{background:#222;width:65px;height:35px}
-.bigbtn{width:220px;height:45px}
+body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0}
+.center{text-align:center;margin-top:120px}
+button{padding:10px 16px;border:none;border-radius:10px;background:#111;color:#00ff88}
+input{width:90%;padding:12px;margin:8px;background:#000;color:#00ff88;border:none;border-radius:8px}
+.section{background:#111;margin:12px;padding:12px;border-radius:12px}
+.copy{margin-left:8px;background:#222}
+#addBtn{
+position:fixed;
+bottom:20px;
+right:20px;
+width:55px;height:55px;
+border-radius:50%;
+font-size:28px;
+background:#00ff88;color:#000;
+}
+#popup{
+position:fixed;
+top:0;left:0;right:0;bottom:0;
+background:#000;
+display:none;
+overflow:auto;
+padding:20px;
+}
 </style>
 </head>
 
 <body>
 
-<!-- CALCULATOR LOCK -->
-<div id="calc">
-<input id="display" readonly><br>
-
-<div>
-<button onclick="press('7')">7</button>
-<button onclick="press('8')">8</button>
-<button onclick="press('9')">9</button>
-</div>
-<div>
-<button onclick="press('4')">4</button>
-<button onclick="press('5')">5</button>
-<button onclick="press('6')">6</button>
-</div>
-<div>
-<button onclick="press('1')">1</button>
-<button onclick="press('2')">2</button>
-<button onclick="press('3')">3</button>
-</div>
-<div>
-<button onclick="press('0')">0</button>
-<button onclick="unlock()">=</button>
-<button onclick="clr()">C</button>
-</div>
+<!-- calculator lock -->
+<div id="lock" class="center">
+<h2>Enter Code</h2>
+<input id="pass" placeholder="Enter code">
+<br><br>
+<button onclick="unlock()">Unlock</button>
 </div>
 
-<!-- VAULT -->
-<div id="vault" class="hidden">
-<h2>PRIVATE VAULT</h2>
+<!-- main vault -->
+<div id="vault" style="display:none;padding:15px">
+<h2 style="text-align:center">PRIVATE VAULT</h2>
+<div id="dataArea"></div>
+</div>
 
-<h3>🏦 Bank</h3>
-<button class="bigbtn" onclick="addField('bank')">+ Add Bank</button>
-<div id="bank"></div>
+<!-- floating add -->
+<button id="addBtn" onclick="openPopup()" style="display:none">+</button>
 
-<h3>💳 Cards</h3>
-<button class="bigbtn" onclick="addField('card')">+ Add Card</button>
-<div id="card"></div>
+<!-- popup -->
+<div id="popup">
+<h3>Add Data</h3>
 
-<h3>📱 UPI</h3>
-<button class="bigbtn" onclick="addField('upi')">+ Add UPI</button>
-<div id="upi"></div>
-
-<h3>👛 Wallet</h3>
-<button class="bigbtn" onclick="addField('wallet')">+ Add Wallet</button>
-<div id="wallet"></div>
-
-<h3>🧩 Custom</h3>
-<button class="bigbtn" onclick="addField('custom')">+ Add Custom</button>
-<div id="custom"></div>
+<input id="bank" placeholder="Bank details">
+<input id="card" placeholder="Card details">
+<input id="upi" placeholder="UPI">
+<input id="wallet" placeholder="Wallet">
+<input id="custom" placeholder="Custom">
 
 <br><br>
-<button class="bigbtn" onclick="saveData()">💾 SAVE DATA</button>
-<button class="bigbtn" onclick="lock()">🔒 LOCK</button>
+<button onclick="saveData()">SAVE</button>
+<button onclick="closePopup()">CANCEL</button>
 </div>
 
 <script>
-const secret="262552";
-let calc="";
+const code="262552";
 
-function press(n){calc+=n;display.value=calc}
-function clr(){calc="";display.value=""}
-
+// unlock
 function unlock(){
- if(calc===secret){
-  document.getElementById("calc").style.display="none";
-  document.getElementById("vault").classList.remove("hidden");
+ if(pass.value===code){
+  document.getElementById("lock").style.display="none";
+  document.getElementById("vault").style.display="block";
+  document.getElementById("addBtn").style.display="block";
   loadData();
  }else{
   alert("Wrong code");
  }
- calc="";display.value="";
 }
 
-function lock(){location.reload()}
+// popup
+function openPopup(){ popup.style.display="block"; }
+function closePopup(){ popup.style.display="none"; }
 
-// ---------- IndexedDB permanent storage ----------
-let db;
-const request=indexedDB.open("MY_PRIVATE_VAULT",1);
-
-request.onupgradeneeded=e=>{
- db=e.target.result;
- db.createObjectStore("vault",{keyPath:"id"});
-};
-
-request.onsuccess=e=>{
- db=e.target.result;
-};
-
-// SAVE
+// save
 function saveData(){
- const data={
-  bank:bank.innerHTML,
-  card:card.innerHTML,
-  upi:upi.innerHTML,
-  wallet:wallet.innerHTML,
-  custom:custom.innerHTML
+ let data={
+  bank:bank.value,
+  card:card.value,
+  upi:upi.value,
+  wallet:wallet.value,
+  custom:custom.value
  };
 
- const tx=db.transaction(["vault"],"readwrite");
- const store=tx.objectStore("vault");
- store.put({id:"data",content:data});
-
- alert("Saved permanently ✔");
+ localStorage.setItem("vaultData",JSON.stringify(data));
+ closePopup();
+ loadData();
 }
 
-// LOAD
+// load + display
 function loadData(){
- const tx=db.transaction(["vault"],"readonly");
- const store=tx.objectStore("vault");
- const req=store.get("data");
+ let d=localStorage.getItem("vaultData");
+ if(!d) return;
+ let data=JSON.parse(d);
 
- req.onsuccess=()=>{
-  if(req.result){
-   const d=req.result.content;
-   bank.innerHTML=d.bank||"";
-   card.innerHTML=d.card||"";
-   upi.innerHTML=d.upi||"";
-   wallet.innerHTML=d.wallet||"";
-   custom.innerHTML=d.custom||"";
+ let html="";
+
+ for(let key in data){
+  if(data[key]){
+   html+=`
+   <div class="section">
+   <b>${key.toUpperCase()}</b><br>
+   <input value="${data[key]}" readonly>
+   <button class="copy" onclick="copyText('${data[key]}')">Copy</button>
+   </div>`;
   }
- };
+ }
+
+ document.getElementById("dataArea").innerHTML=html;
 }
 
-// ADD FIELD
-function addField(section){
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`<input placeholder="Enter data">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- document.getElementById(section).appendChild(d);
-}
-
-// COPY
-function copyText(btn){
- navigator.clipboard.writeText(btn.previousElementSibling.value);
+// copy
+function copyText(t){
+ navigator.clipboard.writeText(t);
+ alert("Copied");
 }
 </script>
+
 </body>
 </html>
