@@ -7,14 +7,17 @@
 <style>
 body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0;text-align:center}
 button{padding:12px;border:none;border-radius:10px;background:#111;color:#00ff88;font-size:18px}
-.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:40px}
+.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:20px}
 .key{width:80px;height:80px;font-size:22px;border-radius:12px}
 .display{width:240px;height:50px;margin:20px auto;background:#000;border-radius:10px;font-size:26px;display:flex;align-items:center;justify-content:center}
-.section{background:#111;margin:12px;padding:12px;border-radius:12px}
+.section{background:#111;margin:12px;padding:12px;border-radius:12px;text-align:left}
 input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
 .copy{background:#222;margin-top:6px}
 #addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
 #popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
+.accordion{background:#111;margin:12px;border-radius:12px}
+.accHeader{padding:14px;font-size:18px;cursor:pointer;background:#111;border-radius:12px}
+.accContent{display:none;padding:10px}
 </style>
 </head>
 
@@ -22,8 +25,7 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 
 <!-- LOCK SCREEN -->
 <div id="lock">
-<h2>Enter Passcode</h2>
-
+<h2 id="lockTitle">Create 4 Digit PIN</h2>
 <div class="display" id="display"></div>
 
 <div class="keypad">
@@ -38,7 +40,7 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 <button class="key" onclick="press(9)">9</button>
 <button class="key" onclick="clearCode()">C</button>
 <button class="key" onclick="press(0)">0</button>
-<button class="key" onclick="unlock()">OK</button>
+<button class="key" onclick="submitPIN()">OK</button>
 </div>
 </div>
 
@@ -80,30 +82,40 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 </div>
 
 <script>
-// ===== LOCK SYSTEM =====
-const passcode="262552";
+// ===== PIN SYSTEM =====
 let entered="";
-
 function press(n){
  entered+=n;
- document.getElementById("display").innerText="•".repeat(entered.length);
+ display.innerText="•".repeat(entered.length);
 }
+function clearCode(){entered="";display.innerText="";}
 
-function clearCode(){
- entered="";
- document.getElementById("display").innerText="";
-}
+function submitPIN(){
+ let saved=localStorage.getItem("vaultPIN");
 
-function unlock(){
- if(entered===passcode){
-  document.getElementById("lock").style.display="none";
-  document.getElementById("vault").style.display="block";
-  document.getElementById("addBtn").style.display="block";
-  loadData();
- }else{
-  alert("Wrong passcode");
+ // first time set pin
+ if(!saved){
+  if(entered.length!==4){alert("Enter 4 digit PIN");return;}
+  localStorage.setItem("vaultPIN",entered);
+  alert("PIN saved permanently");
+  entered="";display.innerText="";
+  lockTitle.innerText="Enter PIN";
+  return;
  }
+
+ // login
+ if(entered===saved){
+  lock.style.display="none";
+  vault.style.display="block";
+  addBtn.style.display="block";
+  loadData();
+ }else alert("Wrong PIN");
+
  clearCode();
+}
+
+if(localStorage.getItem("vaultPIN")){
+ document.getElementById("lockTitle").innerText="Enter PIN";
 }
 
 // ===== POPUP =====
@@ -149,9 +161,8 @@ function addWallet(){
  </div>`;
 }
 
-// ===== SAVE DATA =====
+// ===== SAVE =====
 function saveData(){
-
  let entry={bank:[],card:[],upi:[],wallet:[],
  customTitle:customTitle.value,
  customValue:customValue.value};
@@ -160,17 +171,14 @@ bankFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.bank.push(vals);
 });
-
 cardFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.card.push(vals);
 });
-
 upiFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.upi.push(vals);
 });
-
 walletFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.wallet.push(vals);
@@ -188,58 +196,72 @@ upiFields.innerHTML="";
 walletFields.innerHTML="";
 customTitle.value="";
 customValue.value="";
-
 loadData();
 }
 
-// ===== LOAD DATA =====
+// ===== LOAD + ACCORDION =====
 function loadData(){
 let d=localStorage.getItem("vaultData");
 if(!d) return;
-
 let arr=JSON.parse(d);
 let html="";
 
-arr.forEach((data)=>{
+arr.forEach((data,i)=>{
+
+let content="";
 
 data.bank.forEach(b=>{
- html+=`<div class="section"><b>BANK</b><br>
- ${b.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
+content+=`<div class="section"><b>BANK</b><br>
+${b.map(v=>`<input value="${v}" readonly>
+<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+</div>`;
 });
 
 data.card.forEach(c=>{
- html+=`<div class="section"><b>CARD</b><br>
- ${c.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
+content+=`<div class="section"><b>CARD</b><br>
+${c.map(v=>`<input value="${v}" readonly>
+<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+</div>`;
 });
 
 data.upi.forEach(u=>{
- html+=`<div class="section"><b>UPI</b><br>
- ${u.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
+content+=`<div class="section"><b>UPI</b><br>
+${u.map(v=>`<input value="${v}" readonly>
+<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+</div>`;
 });
 
 data.wallet.forEach(w=>{
- html+=`<div class="section"><b>WALLET</b><br>
- ${w.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
+content+=`<div class="section"><b>WALLET</b><br>
+${w.map(v=>`<input value="${v}" readonly>
+<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+</div>`;
 });
 
 if(data.customTitle){
- html+=`<div class="section"><b>${data.customTitle}</b><br>
- <input value="${data.customValue}" readonly>
- <button class="copy" onclick="copy('${data.customValue}')">Copy</button>
- </div>`;
+content+=`<div class="section"><b>${data.customTitle}</b><br>
+<input value="${data.customValue}" readonly>
+<button class="copy" onclick="copy('${data.customValue}')">Copy</button>
+</div>`;
 }
+
+html+=`
+<div class="accordion">
+<div class="accHeader" onclick="toggleAcc(${i})">Entry ${i+1}</div>
+<div class="accContent" id="acc${i}">
+${content}
+</div>
+</div>
+`;
 
 });
 
 dataArea.innerHTML=html;
+}
+
+function toggleAcc(i){
+let el=document.getElementById("acc"+i);
+el.style.display = el.style.display==="block"?"none":"block";
 }
 
 function copy(t){
