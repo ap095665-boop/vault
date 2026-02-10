@@ -1,197 +1,204 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Offline Vault</title>
+<title>Vault</title>
 
 <style>
-body{font-family:Arial;background:#0d1117;color:#fff;margin:0;padding:15px}
-h2{margin-top:25px}
-button{padding:8px 12px;margin:5px;border-radius:8px;border:none;background:#238636;color:#fff}
-input,textarea{width:90%;padding:8px;margin:5px;border-radius:6px;border:none}
-.box{background:#161b22;padding:10px;margin:10px 0;border-radius:10px}
-.copy{background:#30363d}
-.lock{display:flex;flex-direction:column;align-items:center;margin-top:100px}
+body{background:#000;color:#00ff9c;font-family:monospace;padding:15px}
+button{padding:10px;margin:5px;border:none;border-radius:8px;background:#003b2a;color:#00ff9c}
+input{padding:8px;margin:5px;border-radius:6px;border:none;width:80%;background:#001a12;color:#00ff9c}
+.box{background:#001a12;padding:10px;margin:10px 0;border-radius:10px}
+.copy{background:#00291d}
+.center{text-align:center;margin-top:120px}
 .hidden{display:none}
+.blur{filter:blur(20px)}
 </style>
 </head>
 
 <body>
 
-<div id="lockScreen" class="lock">
-<h2>🔐 Secure Vault</h2>
-<input type="password" id="masterPass" placeholder="Enter master password">
+<div id="lock" class="center">
+<h2>◉ SECURE VAULT</h2>
+<button onclick="setup()">First Time Fingerprint Setup</button>
 <button onclick="unlock()">Unlock</button>
 </div>
 
 <div id="app" class="hidden">
 
 <h2>🏦 BANK</h2>
-<button onclick="addBank()">+ Add Bank</button>
+<button onclick="addBank()">+ Bank</button>
 <div id="banks"></div>
 
 <h2>💳 CARDS</h2>
-<button onclick="addCard()">+ Add Card</button>
+<button onclick="addCard()">+ Card</button>
 <div id="cards"></div>
 
 <h2>📱 UPI</h2>
-<button onclick="addUPI()">+ Add UPI</button>
+<button onclick="addUPI()">+ UPI</button>
 <div id="upi"></div>
 
 <h2>👛 WALLET</h2>
-<button onclick="addWallet()">+ Add Wallet</button>
+<button onclick="addWallet()">+ Wallet</button>
 <div id="wallet"></div>
 
 <h2>🧩 CUSTOM</h2>
-<button onclick="addCustom()">+ Add Custom Title</button>
+<button onclick="addCustom()">+ Custom</button>
 <div id="custom"></div>
 
-<br><br>
+<br>
+<button onclick="fakeVault()">Open Fake Vault</button>
+<button onclick="wipe()">☠ Self Destruct</button>
 <button onclick="lock()">🔒 Lock</button>
 </div>
 
 <script>
-let masterKey="";
+let fail=0;
 
-// ---------- Encryption ----------
-async function getKey(password){
- const enc=new TextEncoder().encode(password);
- const hash=await crypto.subtle.digest("SHA-256",enc);
- return crypto.subtle.importKey("raw",hash,{name:"AES-GCM"},false,["encrypt","decrypt"]);
-}
-
-async function encrypt(text){
- const key=await getKey(masterKey);
- const iv=crypto.getRandomValues(new Uint8Array(12));
- const enc=new TextEncoder().encode(text);
- const cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc);
- return JSON.stringify({iv:Array.from(iv),data:Array.from(new Uint8Array(cipher))});
-}
-
-async function decrypt(text){
+// -------- fingerprint setup ----------
+async function setup(){
  try{
- const obj=JSON.parse(text);
- const key=await getKey(masterKey);
- const iv=new Uint8Array(obj.iv);
- const data=new Uint8Array(obj.data);
- const dec=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);
- return new TextDecoder().decode(dec);
- }catch{return "";}
+  const cred = await navigator.credentials.create({
+   publicKey:{
+    challenge:new Uint8Array(32),
+    rp:{name:"Vault"},
+    user:{id:new Uint8Array(16),name:"user",displayName:"user"},
+    pubKeyCredParams:[{type:"public-key",alg:-7}],
+    authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"},
+    timeout:60000
+   }
+  });
+  localStorage.setItem("vaultKey",btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+  alert("Fingerprint registered");
+ }catch(e){alert("Setup failed")}
 }
 
-// ---------- Lock ----------
+// -------- unlock ----------
 async function unlock(){
- masterKey=document.getElementById("masterPass").value;
- if(!masterKey){alert("Enter password");return;}
- document.getElementById("lockScreen").style.display="none";
- document.getElementById("app").classList.remove("hidden");
- loadAll();
+ try{
+  const id=localStorage.getItem("vaultKey");
+  if(!id){alert("Setup first");return;}
+  const raw=Uint8Array.from(atob(id),c=>c.charCodeAt(0));
+
+  await navigator.credentials.get({
+   publicKey:{
+    challenge:new Uint8Array(32),
+    allowCredentials:[{id:raw,type:"public-key"}],
+    userVerification:"required",
+    timeout:60000
+   }
+  });
+
+  fail=0;
+  showApp();
+
+ }catch(e){
+  fail++;
+  if(fail>=5){wipe()}
+  alert("Failed attempt "+fail);
+ }
 }
+
+// -------- show app ----------
+function showApp(){
+ document.getElementById("lock").style.display="none";
+ document.getElementById("app").classList.remove("hidden");
+}
+
+// -------- lock ----------
 function lock(){location.reload()}
 
-// ---------- Copy ----------
-function copyText(el){
- navigator.clipboard.writeText(el.value);
+// -------- wipe ----------
+function wipe(){
+ localStorage.clear();
+ alert("Vault destroyed");
+ location.reload();
 }
 
-// ---------- Save/Load ----------
-async function save(id,val){
- const enc=await encrypt(val);
- localStorage.setItem(id,enc);
-}
-async function load(id){
- const enc=localStorage.getItem(id);
- if(!enc) return "";
- return await decrypt(enc);
+// -------- fake vault ----------
+function fakeVault(){
+ document.getElementById("lock").style.display="none";
+ document.getElementById("app").classList.remove("hidden");
+ document.getElementById("app").innerHTML="<h2>Empty vault</h2>";
 }
 
-// ---------- BANK ----------
+// -------- auto lock ----------
+document.addEventListener("visibilitychange",()=>{
+ if(document.hidden) location.reload();
+});
+
+// -------- copy ----------
+function copyText(el){navigator.clipboard.writeText(el.value)}
+
+// -------- BANK ----------
 let bankCount=0;
 function addBank(){
- if(bankCount>=10) return alert("Max 10 banks");
+ if(bankCount>=10) return alert("Max 10");
  bankCount++;
- let div=document.createElement("div");
- div.className="box";
- div.innerHTML=`<b>Bank ${bankCount}</b>
- <button onclick="addRow(this)">+ Add Row</button>
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`<b>Bank ${bankCount}</b>
+ <button onclick="addRow(this)">+ Row</button>
  <div class="rows"></div>`;
- document.getElementById("banks").appendChild(div);
+ document.getElementById("banks").appendChild(d);
 }
-
 function addRow(btn){
- let container=btn.parentElement.querySelector(".rows");
- if(container.children.length>=5) return alert("Max 5 rows");
- let row=document.createElement("div");
- row.innerHTML=`
- <input placeholder="Account no">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- <input placeholder="IFSC">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- <input placeholder="Notes">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- <hr>`;
- container.appendChild(row);
+ let c=btn.nextElementSibling;
+ if(c.children.length>=5) return alert("Max 5");
+ let r=document.createElement("div");
+ r.innerHTML=`<input placeholder="Data">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
+ c.appendChild(r);
 }
 
-// ---------- CARD ----------
+// -------- CARD ----------
 function addCard(){
- let div=document.createElement("div");
- div.className="box";
- div.innerHTML=`
- Card:<br>
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`
  <input placeholder="Card number"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
  <input placeholder="Expiry"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- <input placeholder="CVV"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- `;
- document.getElementById("cards").appendChild(div);
+ <input placeholder="CVV"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
+ document.getElementById("cards").appendChild(d);
 }
 
-// ---------- UPI ----------
+// -------- UPI ----------
 function addUPI(){
- let div=document.createElement("div");
- div.className="box";
- div.innerHTML=`
- <input placeholder="UPI ID"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- `;
- document.getElementById("upi").appendChild(div);
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`<input placeholder="UPI ID">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
+ document.getElementById("upi").appendChild(d);
 }
 
-// ---------- WALLET ----------
+// -------- WALLET ----------
 function addWallet(){
- let div=document.createElement("div");
- div.className="box";
- div.innerHTML=`
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`
  <input placeholder="Wallet ID"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- <input placeholder="Password"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- `;
- document.getElementById("wallet").appendChild(div);
+ <input placeholder="Password"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
+ document.getElementById("wallet").appendChild(d);
 }
 
-// ---------- CUSTOM ----------
+// -------- CUSTOM ----------
 function addCustom(){
- let title=prompt("Enter custom title");
- if(!title) return;
- let div=document.createElement("div");
- div.className="box";
- div.innerHTML=`<b>${title}</b>
- <button onclick="addCustomRow(this)">+ Add Row</button>
+ let t=prompt("Title");
+ if(!t) return;
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`<b>${t}</b>
+ <button onclick="addCustomRow(this)">+ Row</button>
  <div></div>`;
- document.getElementById("custom").appendChild(div);
+ document.getElementById("custom").appendChild(d);
 }
-
 function addCustomRow(btn){
  let c=btn.nextElementSibling;
- let row=document.createElement("div");
- row.innerHTML=`
- <input placeholder="Data"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
- `;
- c.appendChild(row);
+ let r=document.createElement("div");
+ r.innerHTML=`<input placeholder="Data">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
+ c.appendChild(r);
 }
-
-// ---------- Load (future encrypted save expansion) ----------
-async function loadAll(){}
-
 </script>
 </body>
 </html>
