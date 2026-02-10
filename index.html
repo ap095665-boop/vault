@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,7 +18,6 @@ input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
 
 <body>
 
-<!-- Calculator -->
 <div id="calc">
 <input id="display" readonly><br>
 
@@ -44,50 +43,46 @@ input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
 </div>
 </div>
 
-<!-- Vault -->
 <div id="vault" class="hidden">
-<h3>SECURE VAULT</h3>
+<h3>PRIVATE VAULT</h3>
 
 <h4>🏦 Bank</h4>
-<button onclick="addBank()">+ Add Bank</button>
-<div id="banks"></div>
+<button onclick="addField('bank')">+ Add Bank</button>
+<div id="bank"></div>
 
 <h4>💳 Cards</h4>
-<button onclick="addCard()">+ Add Card</button>
-<div id="cards"></div>
+<button onclick="addField('card')">+ Add Card</button>
+<div id="card"></div>
 
 <h4>📱 UPI</h4>
-<button onclick="addUPI()">+ Add UPI</button>
+<button onclick="addField('upi')">+ Add UPI</button>
 <div id="upi"></div>
 
 <h4>👛 Wallet</h4>
-<button onclick="addWallet()">+ Add Wallet</button>
+<button onclick="addField('wallet')">+ Add Wallet</button>
 <div id="wallet"></div>
 
 <h4>🧩 Custom</h4>
-<button onclick="addCustom()">+ Add Custom</button>
+<button onclick="addField('custom')">+ Add Custom</button>
 <div id="custom"></div>
 
 <br>
-<button onclick="lock()">LOCK</button>
+<button onclick="saveData()">💾 SAVE DATA</button>
+<button onclick="lock()">🔒 LOCK</button>
 </div>
 
 <script>
 const secret="262552";
-let calcInput="";
+let calc="";
 
-// calculator
-function press(n){calcInput+=n;display.value=calcInput}
-function clr(){calcInput="";display.value=""}
-function check(){
- if(calcInput===secret){fingerprint()}
- calcInput="";display.value=""
-}
+function press(n){calc+=n;display.value=calc}
+function clr(){calc="";display.value=""}
+function check(){ if(calc===secret){fingerprint()} calc="";display.value="" }
 
 // fingerprint
 async function fingerprint(){
  try{
-  const saved=localStorage.getItem("fp");
+  let saved=localStorage.getItem("fp");
   if(!saved){
    const cred=await navigator.credentials.create({
     publicKey:{
@@ -98,13 +93,11 @@ async function fingerprint(){
      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"}
     }
    });
-   localStorage.setItem("fp",btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+   localStorage.setItem("fp","ok");
   }else{
-   const raw=Uint8Array.from(atob(saved),c=>c.charCodeAt(0));
    await navigator.credentials.get({
     publicKey:{
      challenge:new Uint8Array(32),
-     allowCredentials:[{id:raw,type:"public-key"}],
      userVerification:"required"
     }
    });
@@ -113,87 +106,68 @@ async function fingerprint(){
  }catch(e){alert("Fingerprint failed")}
 }
 
-// open vault
 function openVault(){
- document.getElementById("calc").style.display="none";
- document.getElementById("vault").classList.remove("hidden");
- load();
+ calcDiv.style.display="none";
+ vault.classList.remove("hidden");
+ loadData();
 }
 
-// lock
 function lock(){location.reload()}
 
-// ---------- STORAGE ----------
-function save(){
- const data=document.getElementById("vault").innerHTML;
- localStorage.setItem("vaultData",data);
-}
-function load(){
- const data=localStorage.getItem("vaultData");
- if(data){document.getElementById("vault").innerHTML=data}
+// ---------- IndexedDB ----------
+let db;
+const request=indexedDB.open("VaultDB",1);
+
+request.onupgradeneeded=e=>{
+ db=e.target.result;
+ db.createObjectStore("data",{keyPath:"id"});
+};
+
+request.onsuccess=e=>{
+ db=e.target.result;
+};
+
+function saveData(){
+ const data={
+  bank:bank.innerHTML,
+  card:card.innerHTML,
+  upi:upi.innerHTML,
+  wallet:wallet.innerHTML,
+  custom:custom.innerHTML
+ };
+ const tx=db.transaction(["data"],"readwrite");
+ const store=tx.objectStore("data");
+ store.put({id:"vault",content:data});
+ alert("Saved permanently ✔");
 }
 
-// auto save typing
-document.addEventListener("input",()=>{save()})
+function loadData(){
+ const tx=db.transaction(["data"],"readonly");
+ const store=tx.objectStore("data");
+ const req=store.get("vault");
+ req.onsuccess=()=>{
+  if(req.result){
+   const d=req.result.content;
+   bank.innerHTML=d.bank||"";
+   card.innerHTML=d.card||"";
+   upi.innerHTML=d.upi||"";
+   wallet.innerHTML=d.wallet||"";
+   custom.innerHTML=d.custom||"";
+  }
+ };
+}
 
-// copy
+// add field
+function addField(section){
+ let d=document.createElement("div");
+ d.className="box";
+ d.innerHTML=`<input placeholder="Enter data">
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ document.getElementById(section).appendChild(d);
+}
+
 function copyText(btn){
- const val=btn.previousElementSibling.value;
- navigator.clipboard.writeText(val);
-}
-
-// bank
-let bankCount=0;
-function addBank(){
- if(bankCount>=10) return alert("Max 10 banks");
- bankCount++;
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`Bank ${bankCount}<br>
- <input placeholder="Account / IFSC / name">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- banks.appendChild(d); save();
-}
-
-// card
-function addCard(){
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`<input placeholder="Card number">
- <button class="copy" onclick="copyText(this)">Copy</button>
- <input placeholder="Expiry / CVV">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- cards.appendChild(d); save();
-}
-
-// upi
-function addUPI(){
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`<input placeholder="UPI ID">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- upi.appendChild(d); save();
-}
-
-// wallet
-function addWallet(){
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`<input placeholder="Wallet / password">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- wallet.appendChild(d); save();
-}
-
-// custom
-function addCustom(){
- let t=prompt("Title");
- if(!t) return;
- let d=document.createElement("div");
- d.className="box";
- d.innerHTML=`${t}<br>
- <input placeholder="Data">
- <button class="copy" onclick="copyText(this)">Copy</button>`;
- custom.appendChild(d); save();
+ navigator.clipboard.writeText(btn.previousElementSibling.value);
 }
 </script>
 </body>
