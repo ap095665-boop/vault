@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Offline Vault</title>
+
+<style>
+body{font-family:Arial;background:#0d1117;color:#fff;margin:0;padding:15px}
+h2{margin-top:25px}
+button{padding:8px 12px;margin:5px;border-radius:8px;border:none;background:#238636;color:#fff}
+input,textarea{width:90%;padding:8px;margin:5px;border-radius:6px;border:none}
+.box{background:#161b22;padding:10px;margin:10px 0;border-radius:10px}
+.copy{background:#30363d}
+.lock{display:flex;flex-direction:column;align-items:center;margin-top:100px}
+.hidden{display:none}
+</style>
+</head>
+
+<body>
+
+<div id="lockScreen" class="lock">
+<h2>🔐 Secure Vault</h2>
+<input type="password" id="masterPass" placeholder="Enter master password">
+<button onclick="unlock()">Unlock</button>
+</div>
+
+<div id="app" class="hidden">
+
+<h2>🏦 BANK</h2>
+<button onclick="addBank()">+ Add Bank</button>
+<div id="banks"></div>
+
+<h2>💳 CARDS</h2>
+<button onclick="addCard()">+ Add Card</button>
+<div id="cards"></div>
+
+<h2>📱 UPI</h2>
+<button onclick="addUPI()">+ Add UPI</button>
+<div id="upi"></div>
+
+<h2>👛 WALLET</h2>
+<button onclick="addWallet()">+ Add Wallet</button>
+<div id="wallet"></div>
+
+<h2>🧩 CUSTOM</h2>
+<button onclick="addCustom()">+ Add Custom Title</button>
+<div id="custom"></div>
+
+<br><br>
+<button onclick="lock()">🔒 Lock</button>
+</div>
+
+<script>
+let masterKey="";
+
+// ---------- Encryption ----------
+async function getKey(password){
+ const enc=new TextEncoder().encode(password);
+ const hash=await crypto.subtle.digest("SHA-256",enc);
+ return crypto.subtle.importKey("raw",hash,{name:"AES-GCM"},false,["encrypt","decrypt"]);
+}
+
+async function encrypt(text){
+ const key=await getKey(masterKey);
+ const iv=crypto.getRandomValues(new Uint8Array(12));
+ const enc=new TextEncoder().encode(text);
+ const cipher=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,enc);
+ return JSON.stringify({iv:Array.from(iv),data:Array.from(new Uint8Array(cipher))});
+}
+
+async function decrypt(text){
+ try{
+ const obj=JSON.parse(text);
+ const key=await getKey(masterKey);
+ const iv=new Uint8Array(obj.iv);
+ const data=new Uint8Array(obj.data);
+ const dec=await crypto.subtle.decrypt({name:"AES-GCM",iv},key,data);
+ return new TextDecoder().decode(dec);
+ }catch{return "";}
+}
+
+// ---------- Lock ----------
+async function unlock(){
+ masterKey=document.getElementById("masterPass").value;
+ if(!masterKey){alert("Enter password");return;}
+ document.getElementById("lockScreen").style.display="none";
+ document.getElementById("app").classList.remove("hidden");
+ loadAll();
+}
+function lock(){location.reload()}
+
+// ---------- Copy ----------
+function copyText(el){
+ navigator.clipboard.writeText(el.value);
+}
+
+// ---------- Save/Load ----------
+async function save(id,val){
+ const enc=await encrypt(val);
+ localStorage.setItem(id,enc);
+}
+async function load(id){
+ const enc=localStorage.getItem(id);
+ if(!enc) return "";
+ return await decrypt(enc);
+}
+
+// ---------- BANK ----------
+let bankCount=0;
+function addBank(){
+ if(bankCount>=10) return alert("Max 10 banks");
+ bankCount++;
+ let div=document.createElement("div");
+ div.className="box";
+ div.innerHTML=`<b>Bank ${bankCount}</b>
+ <button onclick="addRow(this)">+ Add Row</button>
+ <div class="rows"></div>`;
+ document.getElementById("banks").appendChild(div);
+}
+
+function addRow(btn){
+ let container=btn.parentElement.querySelector(".rows");
+ if(container.children.length>=5) return alert("Max 5 rows");
+ let row=document.createElement("div");
+ row.innerHTML=`
+ <input placeholder="Account no">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <input placeholder="IFSC">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <input placeholder="Notes">
+ <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <hr>`;
+ container.appendChild(row);
+}
+
+// ---------- CARD ----------
+function addCard(){
+ let div=document.createElement("div");
+ div.className="box";
+ div.innerHTML=`
+ Card:<br>
+ <input placeholder="Card number"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <input placeholder="Expiry"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <input placeholder="CVV"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ `;
+ document.getElementById("cards").appendChild(div);
+}
+
+// ---------- UPI ----------
+function addUPI(){
+ let div=document.createElement("div");
+ div.className="box";
+ div.innerHTML=`
+ <input placeholder="UPI ID"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ `;
+ document.getElementById("upi").appendChild(div);
+}
+
+// ---------- WALLET ----------
+function addWallet(){
+ let div=document.createElement("div");
+ div.className="box";
+ div.innerHTML=`
+ <input placeholder="Wallet ID"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ <input placeholder="Password"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ `;
+ document.getElementById("wallet").appendChild(div);
+}
+
+// ---------- CUSTOM ----------
+function addCustom(){
+ let title=prompt("Enter custom title");
+ if(!title) return;
+ let div=document.createElement("div");
+ div.className="box";
+ div.innerHTML=`<b>${title}</b>
+ <button onclick="addCustomRow(this)">+ Add Row</button>
+ <div></div>`;
+ document.getElementById("custom").appendChild(div);
+}
+
+function addCustomRow(btn){
+ let c=btn.nextElementSibling;
+ let row=document.createElement("div");
+ row.innerHTML=`
+ <input placeholder="Data"><button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>
+ `;
+ c.appendChild(row);
+}
+
+// ---------- Load (future encrypted save expansion) ----------
+async function loadAll(){}
+
+</script>
+</body>
+</html>
