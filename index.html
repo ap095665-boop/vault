@@ -2,63 +2,66 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Vault</title>
+<title>Private Vault</title>
 
 <style>
 body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0}
 .center{text-align:center;margin-top:120px}
 button{padding:10px 16px;border:none;border-radius:10px;background:#111;color:#00ff88}
-input{width:90%;padding:12px;margin:8px;background:#000;color:#00ff88;border:none;border-radius:8px}
+input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
 .section{background:#111;margin:12px;padding:12px;border-radius:12px}
-.copy{margin-left:8px;background:#222}
+.copy{margin-top:6px;background:#222}
 #addBtn{
-position:fixed;
-bottom:20px;
-right:20px;
-width:55px;height:55px;
-border-radius:50%;
-font-size:28px;
-background:#00ff88;color:#000;
-}
+position:fixed;bottom:20px;right:20px;
+width:60px;height:60px;border-radius:50%;
+font-size:28px;background:#00ff88;color:#000}
 #popup{
-position:fixed;
-top:0;left:0;right:0;bottom:0;
-background:#000;
-display:none;
-overflow:auto;
-padding:20px;
-}
+position:fixed;top:0;left:0;right:0;bottom:0;
+background:#000;display:none;overflow:auto;padding:20px}
 </style>
 </head>
 
 <body>
 
-<!-- calculator lock -->
+<!-- LOCK -->
 <div id="lock" class="center">
 <h2>Enter Code</h2>
-<input id="pass" placeholder="Enter code">
+<input id="pass">
 <br><br>
 <button onclick="unlock()">Unlock</button>
 </div>
 
-<!-- main vault -->
+<!-- VAULT -->
 <div id="vault" style="display:none;padding:15px">
 <h2 style="text-align:center">PRIVATE VAULT</h2>
 <div id="dataArea"></div>
 </div>
 
-<!-- floating add -->
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
 
-<!-- popup -->
+<!-- POPUP -->
 <div id="popup">
 <h3>Add Data</h3>
 
-<input id="bank" placeholder="Bank details">
-<input id="card" placeholder="Card details">
-<input id="upi" placeholder="UPI">
-<input id="wallet" placeholder="Wallet">
-<input id="custom" placeholder="Custom">
+<h4>🏦 Bank</h4>
+<div id="bankFields"></div>
+<button onclick="addBank()">+ Add Bank</button>
+
+<h4>💳 Cards</h4>
+<div id="cardFields"></div>
+<button onclick="addCard()">+ Add Card</button>
+
+<h4>📱 UPI</h4>
+<div id="upiFields"></div>
+<button onclick="addUpi()">+ Add UPI</button>
+
+<h4>👛 Wallet</h4>
+<div id="walletFields"></div>
+<button onclick="addWallet()">+ Add Wallet</button>
+
+<h4>🧩 Custom</h4>
+<input id="customTitle" placeholder="Custom title">
+<input id="customValue" placeholder="Custom data">
 
 <br><br>
 <button onclick="saveData()">SAVE</button>
@@ -71,62 +74,118 @@ const code="262552";
 // unlock
 function unlock(){
  if(pass.value===code){
-  document.getElementById("lock").style.display="none";
-  document.getElementById("vault").style.display="block";
-  document.getElementById("addBtn").style.display="block";
+  lock.style.display="none";
+  vault.style.display="block";
+  addBtn.style.display="block";
   loadData();
- }else{
-  alert("Wrong code");
- }
+ }else alert("Wrong code");
 }
 
-// popup
-function openPopup(){ popup.style.display="block"; }
-function closePopup(){ popup.style.display="none"; }
+// popup control
+function openPopup(){popup.style.display="block"}
+function closePopup(){popup.style.display="none"}
 
-// save
+// add dynamic fields
+function addBank(){
+ bankFields.innerHTML+=`
+ <div class="section">
+ <input placeholder="Account number">
+ <input placeholder="IFSC">
+ <input placeholder="Bank name">
+ <input placeholder="Branch">
+ </div>`;
+}
+
+function addCard(){
+ cardFields.innerHTML+=`
+ <div class="section">
+ <input placeholder="Card number">
+ <input placeholder="Name">
+ <input placeholder="Expiry">
+ <input placeholder="CVV">
+ <input placeholder="PIN hint">
+ </div>`;
+}
+
+function addUpi(){
+ upiFields.innerHTML+=`
+ <div class="section">
+ <input placeholder="UPI ID">
+ <input placeholder="Name">
+ </div>`;
+}
+
+function addWallet(){
+ walletFields.innerHTML+=`
+ <div class="section">
+ <input placeholder="Wallet name">
+ <input placeholder="ID / email">
+ <input placeholder="Password/PIN">
+ </div>`;
+}
+
+// SAVE MULTIPLE ENTRIES
 function saveData(){
- let data={
-  bank:bank.value,
-  card:card.value,
-  upi:upi.value,
-  wallet:wallet.value,
-  custom:custom.value
+
+ let newEntry={
+  bank:bankFields.innerHTML,
+  card:cardFields.innerHTML,
+  upi:upiFields.innerHTML,
+  wallet:walletFields.innerHTML,
+  customTitle:customTitle.value,
+  customValue:customValue.value
  };
 
- localStorage.setItem("vaultData",JSON.stringify(data));
- closePopup();
+ let existing=localStorage.getItem("vaultData");
+ let arr= existing ? JSON.parse(existing) : [];
+
+ arr.push(newEntry);
+
+ localStorage.setItem("vaultData",JSON.stringify(arr));
+
+ popup.style.display="none";
+
+ // clear fields after save
+ bankFields.innerHTML="";
+ cardFields.innerHTML="";
+ upiFields.innerHTML="";
+ walletFields.innerHTML="";
+ customTitle.value="";
+ customValue.value="";
+
  loadData();
 }
 
-// load + display
+// LOAD ALL ENTRIES
 function loadData(){
  let d=localStorage.getItem("vaultData");
  if(!d) return;
- let data=JSON.parse(d);
 
+ let arr=JSON.parse(d);
  let html="";
 
- for(let key in data){
-  if(data[key]){
-   html+=`
-   <div class="section">
-   <b>${key.toUpperCase()}</b><br>
-   <input value="${data[key]}" readonly>
-   <button class="copy" onclick="copyText('${data[key]}')">Copy</button>
-   </div>`;
+ arr.forEach((data,index)=>{
+
+  if(data.bank){
+   html+="<h3>BANK "+(index+1)+"</h3>"+data.bank;
   }
- }
+  if(data.card){
+   html+="<h3>CARD "+(index+1)+"</h3>"+data.card;
+  }
+  if(data.upi){
+   html+="<h3>UPI "+(index+1)+"</h3>"+data.upi;
+  }
+  if(data.wallet){
+   html+="<h3>WALLET "+(index+1)+"</h3>"+data.wallet;
+  }
+  if(data.customTitle){
+   html+=`<div class="section"><b>${data.customTitle}</b><br>${data.customValue}</div>`;
+  }
 
- document.getElementById("dataArea").innerHTML=html;
-}
+ });
 
-// copy
-function copyText(t){
- navigator.clipboard.writeText(t);
- alert("Copied");
+ dataArea.innerHTML=html;
 }
 </script>
-
 </body>
 </html>
