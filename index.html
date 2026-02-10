@@ -5,33 +5,60 @@
 <title>Private Vault</title>
 
 <style>
-body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0}
-.center{text-align:center;margin-top:120px}
+body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0;text-align:center}
 button{padding:10px 16px;border:none;border-radius:10px;background:#111;color:#00ff88}
 input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
 .section{background:#111;margin:12px;padding:12px;border-radius:12px}
 .copy{margin-top:6px;background:#222}
-#addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
-#popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
+#addBtn{
+position:fixed;bottom:20px;right:20px;
+width:60px;height:60px;border-radius:50%;
+font-size:28px;background:#00ff88;color:#000}
+#popup{
+position:fixed;top:0;left:0;right:0;bottom:0;
+background:#000;display:none;overflow:auto;padding:20px}
+.dot{
+width:70px;height:70px;border-radius:50%;
+background:#111;border:2px solid #00ff88;
+color:#00ff88;font-size:20px;margin:8px;
+}
+.grid{display:grid;grid-template-columns:repeat(3,80px);gap:20px;justify-content:center;margin-top:40px}
 </style>
 </head>
 
 <body>
 
-<div id="lock" class="center">
-<h2>Enter Code</h2>
-<input id="pass">
-<br><br>
-<button onclick="unlock()">Unlock</button>
+<!-- PATTERN LOCK -->
+<div id="lock">
+<h2 id="lockTitle">Create Pattern</h2>
+
+<div class="grid">
+<button class="dot" onclick="tap(1)">1</button>
+<button class="dot" onclick="tap(2)">2</button>
+<button class="dot" onclick="tap(3)">3</button>
+<button class="dot" onclick="tap(4)">4</button>
+<button class="dot" onclick="tap(5)">5</button>
+<button class="dot" onclick="tap(6)">6</button>
+<button class="dot" onclick="tap(7)">7</button>
+<button class="dot" onclick="tap(8)">8</button>
+<button class="dot" onclick="tap(9)">9</button>
 </div>
 
+<br>
+<button onclick="savePattern()">Save Pattern</button>
+<button onclick="unlockPattern()">Unlock</button>
+<button onclick="clearPattern()">Clear</button>
+</div>
+
+<!-- VAULT -->
 <div id="vault" style="display:none;padding:15px">
-<h2 style="text-align:center">PRIVATE VAULT</h2>
+<h2>PRIVATE VAULT</h2>
 <div id="dataArea"></div>
 </div>
 
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
 
+<!-- POPUP -->
 <div id="popup">
 <h3>Add Data</h3>
 
@@ -61,21 +88,56 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 </div>
 
 <script>
-const code="262552";
+// ================= PATTERN LOCK =================
+let patternInput=[];
 
-function unlock(){
- if(pass.value===code){
-  lock.style.display="none";
-  vault.style.display="block";
-  addBtn.style.display="block";
-  loadData();
- }else alert("Wrong code");
+function tap(n){ patternInput.push(n); }
+
+function clearPattern(){ patternInput=[]; }
+
+function savePattern(){
+ if(localStorage.getItem("vaultPattern")){
+  alert("Pattern already set");
+  return;
+ }
+ if(patternInput.length<4){
+  alert("Use minimum 4 dots");
+  return;
+ }
+ localStorage.setItem("vaultPattern",patternInput.join(""));
+ alert("Pattern saved permanently");
+ patternInput=[];
+ location.reload();
 }
 
-function openPopup(){popup.style.display="block"}
-function closePopup(){popup.style.display="none"}
+function unlockPattern(){
+ let saved=localStorage.getItem("vaultPattern");
+ if(!saved){
+  alert("Create pattern first");
+  return;
+ }
+ if(patternInput.join("")===saved){
+  document.getElementById("lock").style.display="none";
+  document.getElementById("vault").style.display="block";
+  document.getElementById("addBtn").style.display="block";
+  loadData();
+ }else{
+  alert("Wrong pattern");
+ }
+ patternInput=[];
+}
 
-// add fields
+window.onload=function(){
+ if(localStorage.getItem("vaultPattern")){
+  document.getElementById("lockTitle").innerText="Draw Pattern to Unlock";
+ }
+};
+
+// ================= POPUP CONTROL =================
+function openPopup(){popup.style.display="block";}
+function closePopup(){popup.style.display="none";}
+
+// ================= ADD FIELDS =================
 function addBank(){
  bankFields.innerHTML+=`
  <div class="section">
@@ -114,10 +176,12 @@ function addWallet(){
  </div>`;
 }
 
-// SAVE CORRECTLY
+// ================= SAVE DATA =================
 function saveData(){
 
- let entry={bank:[],card:[],upi:[],wallet:[],customTitle:customTitle.value,customValue:customValue.value};
+ let entry={bank:[],card:[],upi:[],wallet:[],
+ customTitle:customTitle.value,
+ customValue:customValue.value};
 
 // bank
 bankFields.querySelectorAll(".section").forEach(sec=>{
@@ -146,7 +210,6 @@ walletFields.querySelectorAll(".section").forEach(sec=>{
 let existing=localStorage.getItem("vaultData");
 let arr= existing ? JSON.parse(existing) : [];
 arr.push(entry);
-
 localStorage.setItem("vaultData",JSON.stringify(arr));
 
 popup.style.display="none";
@@ -160,7 +223,7 @@ customValue.value="";
 loadData();
 }
 
-// LOAD
+// ================= LOAD DATA =================
 function loadData(){
 let d=localStorage.getItem("vaultData");
 if(!d) return;
@@ -168,29 +231,33 @@ if(!d) return;
 let arr=JSON.parse(d);
 let html="";
 
-arr.forEach((data,index)=>{
+arr.forEach((data)=>{
 
 data.bank.forEach(b=>{
  html+=`<div class="section"><b>BANK</b><br>
- ${b.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ ${b.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
  </div>`;
 });
 
 data.card.forEach(c=>{
  html+=`<div class="section"><b>CARD</b><br>
- ${c.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ ${c.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
  </div>`;
 });
 
 data.upi.forEach(u=>{
  html+=`<div class="section"><b>UPI</b><br>
- ${u.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ ${u.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
  </div>`;
 });
 
 data.wallet.forEach(w=>{
  html+=`<div class="section"><b>WALLET</b><br>
- ${w.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ ${w.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
  </div>`;
 });
 
@@ -211,5 +278,6 @@ navigator.clipboard.writeText(t);
 alert("Copied");
 }
 </script>
+
 </body>
 </html>
