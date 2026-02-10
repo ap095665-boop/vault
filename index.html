@@ -55,6 +55,8 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 <!-- POPUP -->
 <div id="popup">
 <h3>Add Data</h3>
+ <h4>Entry Title</h4>
+<input id="entryTitle" placeholder="Example: Personal Bank / Cards">
 
 <h4>🏦 Bank</h4>
 <div id="bankFields"></div>
@@ -163,9 +165,12 @@ function addWallet(){
 
 // ===== SAVE =====
 function saveData(){
- let entry={bank:[],card:[],upi:[],wallet:[],
+ let entry={
+ title: entryTitle.value || "Untitled",
+ bank:[],card:[],upi:[],wallet:[],
  customTitle:customTitle.value,
- customValue:customValue.value};
+ customValue:customValue.value
+};
 
 bankFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
@@ -196,6 +201,7 @@ upiFields.innerHTML="";
 walletFields.innerHTML="";
 customTitle.value="";
 customValue.value="";
+ entryTitle.value="";
 loadData();
 }
 
@@ -247,7 +253,7 @@ content+=`<div class="section"><b>${data.customTitle}</b><br>
 
 html+=`
 <div class="accordion">
-<div class="accHeader" onclick="toggleAcc(${i})">Entry ${i+1}</div>
+<div class="accHeader" onclick="toggleAcc(${i})">${data.title}</div>
 <div class="accContent" id="acc${i}">
 ${content}
 </div>
