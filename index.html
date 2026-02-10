@@ -5,19 +5,21 @@
 <title>Calculator</title>
 
 <style>
-body{background:#111;font-family:monospace;color:#0f0;text-align:center}
+body{background:#0b0b0b;font-family:monospace;color:#00ff88;text-align:center}
 #calc{margin-top:60px}
-button{width:70px;height:60px;margin:5px;font-size:18px;border:none;border-radius:10px;background:#222;color:#0f0}
-#display{width:300px;height:60px;background:#000;color:#0f0;font-size:26px;margin-bottom:15px;text-align:right;padding:10px;border-radius:10px}
+button{width:70px;height:60px;margin:6px;font-size:18px;border:none;border-radius:12px;background:#161616;color:#00ff88}
+#display{width:300px;height:60px;background:#000;color:#00ff88;font-size:26px;margin-bottom:15px;text-align:right;padding:10px;border-radius:10px}
 .hidden{display:none}
-.box{background:#000;padding:10px;margin:10px;border-radius:10px}
-input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
-.copy{background:#333;width:60px;height:35px}
+.box{background:#111;padding:12px;margin:12px;border-radius:12px}
+input{width:70%;padding:10px;margin:5px;background:#000;color:#00ff88;border:none;border-radius:6px}
+.copy{background:#222;width:65px;height:35px}
+.bigbtn{width:200px;height:45px}
 </style>
 </head>
 
 <body>
 
+<!-- CALCULATOR -->
 <div id="calc">
 <input id="display" readonly><br>
 
@@ -43,72 +45,88 @@ input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
 </div>
 </div>
 
+<!-- VAULT -->
 <div id="vault" class="hidden">
-<h3>PRIVATE VAULT</h3>
+<h2>PRIVATE VAULT</h2>
 
-<h4>🏦 Bank</h4>
-<button onclick="addField('bank')">+ Add Bank</button>
+<h3>🏦 Bank</h3>
+<button class="bigbtn" onclick="addField('bank')">+ Add Bank</button>
 <div id="bank"></div>
 
-<h4>💳 Cards</h4>
-<button onclick="addField('card')">+ Add Card</button>
+<h3>💳 Cards</h3>
+<button class="bigbtn" onclick="addField('card')">+ Add Card</button>
 <div id="card"></div>
 
-<h4>📱 UPI</h4>
-<button onclick="addField('upi')">+ Add UPI</button>
+<h3>📱 UPI</h3>
+<button class="bigbtn" onclick="addField('upi')">+ Add UPI</button>
 <div id="upi"></div>
 
-<h4>👛 Wallet</h4>
-<button onclick="addField('wallet')">+ Add Wallet</button>
+<h3>👛 Wallet</h3>
+<button class="bigbtn" onclick="addField('wallet')">+ Add Wallet</button>
 <div id="wallet"></div>
 
-<h4>🧩 Custom</h4>
-<button onclick="addField('custom')">+ Add Custom</button>
+<h3>🧩 Custom</h3>
+<button class="bigbtn" onclick="addField('custom')">+ Add Custom</button>
 <div id="custom"></div>
 
-<br>
-<button onclick="saveData()">💾 SAVE DATA</button>
-<button onclick="lock()">🔒 LOCK</button>
+<br><br>
+<button class="bigbtn" onclick="saveData()">💾 SAVE DATA</button>
+<button class="bigbtn" onclick="lock()">🔒 LOCK</button>
 </div>
 
 <script>
 const secret="262552";
 let calc="";
 
+// calculator
 function press(n){calc+=n;display.value=calc}
 function clr(){calc="";display.value=""}
 function check(){ if(calc===secret){fingerprint()} calc="";display.value="" }
 
-// fingerprint
+// ---------- fingerprint ----------
 async function fingerprint(){
  try{
-  let saved=localStorage.getItem("fp");
-  if(!saved){
+  let registered=localStorage.getItem("fp_done");
+
+  // first time register
+  if(!registered){
    const cred=await navigator.credentials.create({
     publicKey:{
      challenge:new Uint8Array(32),
      rp:{name:"Vault"},
-     user:{id:new Uint8Array(16),name:"user",displayName:"user"},
+     user:{id:new Uint8Array(16),name:"user",displayName:"Vault User"},
      pubKeyCredParams:[{type:"public-key",alg:-7}],
-     authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"}
+     authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"},
+     timeout:60000
     }
    });
-   localStorage.setItem("fp","ok");
-  }else{
-   await navigator.credentials.get({
-    publicKey:{
-     challenge:new Uint8Array(32),
-     userVerification:"required"
-    }
-   });
+
+   if(!cred){alert("Fingerprint failed");return;}
+   localStorage.setItem("fp_done","yes");
+   alert("Fingerprint registered. Scan again to unlock.");
+   return;
   }
+
+  // login
+  await navigator.credentials.get({
+   publicKey:{
+    challenge:new Uint8Array(32),
+    userVerification:"required",
+    timeout:60000
+   }
+  });
+
   openVault();
- }catch(e){alert("Fingerprint failed")}
+
+ }catch(e){
+  alert("Fingerprint cancelled or not supported");
+ }
 }
 
+// open vault
 function openVault(){
- calcDiv.style.display="none";
- vault.classList.remove("hidden");
+ document.getElementById("calc").style.display="none";
+ document.getElementById("vault").classList.remove("hidden");
  loadData();
 }
 
@@ -116,17 +134,18 @@ function lock(){location.reload()}
 
 // ---------- IndexedDB ----------
 let db;
-const request=indexedDB.open("VaultDB",1);
+const req=indexedDB.open("PRIVATE_VAULT_DB",1);
 
-request.onupgradeneeded=e=>{
+req.onupgradeneeded=e=>{
  db=e.target.result;
- db.createObjectStore("data",{keyPath:"id"});
+ db.createObjectStore("vault",{keyPath:"id"});
 };
 
-request.onsuccess=e=>{
+req.onsuccess=e=>{
  db=e.target.result;
 };
 
+// save
 function saveData(){
  const data={
   bank:bank.innerHTML,
@@ -135,19 +154,23 @@ function saveData(){
   wallet:wallet.innerHTML,
   custom:custom.innerHTML
  };
- const tx=db.transaction(["data"],"readwrite");
- const store=tx.objectStore("data");
- store.put({id:"vault",content:data});
+
+ const tx=db.transaction(["vault"],"readwrite");
+ const store=tx.objectStore("vault");
+ store.put({id:"data",content:data});
+
  alert("Saved permanently ✔");
 }
 
+// load
 function loadData(){
- const tx=db.transaction(["data"],"readonly");
- const store=tx.objectStore("data");
- const req=store.get("vault");
- req.onsuccess=()=>{
-  if(req.result){
-   const d=req.result.content;
+ const tx=db.transaction(["vault"],"readonly");
+ const store=tx.objectStore("vault");
+ const get=store.get("data");
+
+ get.onsuccess=()=>{
+  if(get.result){
+   const d=get.result.content;
    bank.innerHTML=d.bank||"";
    card.innerHTML=d.card||"";
    upi.innerHTML=d.upi||"";
@@ -166,6 +189,7 @@ function addField(section){
  document.getElementById(section).appendChild(d);
 }
 
+// copy
 function copyText(btn){
  navigator.clipboard.writeText(btn.previousElementSibling.value);
 }
