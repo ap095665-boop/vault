@@ -6,48 +6,40 @@
 
 <style>
 body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0;text-align:center}
-button{padding:10px 16px;border:none;border-radius:10px;background:#111;color:#00ff88}
-input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
+button{padding:12px;border:none;border-radius:10px;background:#111;color:#00ff88;font-size:18px}
+.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:40px}
+.key{width:80px;height:80px;font-size:22px;border-radius:12px}
+.display{width:240px;height:50px;margin:20px auto;background:#000;border-radius:10px;font-size:26px;display:flex;align-items:center;justify-content:center}
 .section{background:#111;margin:12px;padding:12px;border-radius:12px}
-.copy{margin-top:6px;background:#222}
-#addBtn{
-position:fixed;bottom:20px;right:20px;
-width:60px;height:60px;border-radius:50%;
-font-size:28px;background:#00ff88;color:#000}
-#popup{
-position:fixed;top:0;left:0;right:0;bottom:0;
-background:#000;display:none;overflow:auto;padding:20px}
-.dot{
-width:70px;height:70px;border-radius:50%;
-background:#111;border:2px solid #00ff88;
-color:#00ff88;font-size:20px;margin:8px;
-}
-.grid{display:grid;grid-template-columns:repeat(3,80px);gap:20px;justify-content:center;margin-top:40px}
+input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
+.copy{background:#222;margin-top:6px}
+#addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
+#popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
 </style>
 </head>
 
 <body>
 
-<!-- PATTERN LOCK -->
+<!-- LOCK SCREEN -->
 <div id="lock">
-<h2 id="lockTitle">Create Pattern</h2>
+<h2>Enter Passcode</h2>
 
-<div class="grid">
-<button class="dot" onclick="tap(1)">1</button>
-<button class="dot" onclick="tap(2)">2</button>
-<button class="dot" onclick="tap(3)">3</button>
-<button class="dot" onclick="tap(4)">4</button>
-<button class="dot" onclick="tap(5)">5</button>
-<button class="dot" onclick="tap(6)">6</button>
-<button class="dot" onclick="tap(7)">7</button>
-<button class="dot" onclick="tap(8)">8</button>
-<button class="dot" onclick="tap(9)">9</button>
+<div class="display" id="display"></div>
+
+<div class="keypad">
+<button class="key" onclick="press(1)">1</button>
+<button class="key" onclick="press(2)">2</button>
+<button class="key" onclick="press(3)">3</button>
+<button class="key" onclick="press(4)">4</button>
+<button class="key" onclick="press(5)">5</button>
+<button class="key" onclick="press(6)">6</button>
+<button class="key" onclick="press(7)">7</button>
+<button class="key" onclick="press(8)">8</button>
+<button class="key" onclick="press(9)">9</button>
+<button class="key" onclick="clearCode()">C</button>
+<button class="key" onclick="press(0)">0</button>
+<button class="key" onclick="unlock()">OK</button>
 </div>
-
-<br>
-<button onclick="savePattern()">Save Pattern</button>
-<button onclick="unlockPattern()">Unlock</button>
-<button onclick="clearPattern()">Clear</button>
 </div>
 
 <!-- VAULT -->
@@ -88,56 +80,37 @@ color:#00ff88;font-size:20px;margin:8px;
 </div>
 
 <script>
-// ================= PATTERN LOCK =================
-let patternInput=[];
+// ===== LOCK SYSTEM =====
+const passcode="262552";
+let entered="";
 
-function tap(n){ patternInput.push(n); }
-
-function clearPattern(){ patternInput=[]; }
-
-function savePattern(){
- if(localStorage.getItem("vaultPattern")){
-  alert("Pattern already set");
-  return;
- }
- if(patternInput.length<4){
-  alert("Use minimum 4 dots");
-  return;
- }
- localStorage.setItem("vaultPattern",patternInput.join(""));
- alert("Pattern saved permanently");
- patternInput=[];
- location.reload();
+function press(n){
+ entered+=n;
+ document.getElementById("display").innerText="•".repeat(entered.length);
 }
 
-function unlockPattern(){
- let saved=localStorage.getItem("vaultPattern");
- if(!saved){
-  alert("Create pattern first");
-  return;
- }
- if(patternInput.join("")===saved){
+function clearCode(){
+ entered="";
+ document.getElementById("display").innerText="";
+}
+
+function unlock(){
+ if(entered===passcode){
   document.getElementById("lock").style.display="none";
   document.getElementById("vault").style.display="block";
   document.getElementById("addBtn").style.display="block";
   loadData();
  }else{
-  alert("Wrong pattern");
+  alert("Wrong passcode");
  }
- patternInput=[];
+ clearCode();
 }
 
-window.onload=function(){
- if(localStorage.getItem("vaultPattern")){
-  document.getElementById("lockTitle").innerText="Draw Pattern to Unlock";
- }
-};
-
-// ================= POPUP CONTROL =================
+// ===== POPUP =====
 function openPopup(){popup.style.display="block";}
 function closePopup(){popup.style.display="none";}
 
-// ================= ADD FIELDS =================
+// ===== ADD FIELDS =====
 function addBank(){
  bankFields.innerHTML+=`
  <div class="section">
@@ -176,32 +149,28 @@ function addWallet(){
  </div>`;
 }
 
-// ================= SAVE DATA =================
+// ===== SAVE DATA =====
 function saveData(){
 
  let entry={bank:[],card:[],upi:[],wallet:[],
  customTitle:customTitle.value,
  customValue:customValue.value};
 
-// bank
 bankFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.bank.push(vals);
 });
 
-// card
 cardFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.card.push(vals);
 });
 
-// upi
 upiFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.upi.push(vals);
 });
 
-// wallet
 walletFields.querySelectorAll(".section").forEach(sec=>{
  let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
  entry.wallet.push(vals);
@@ -223,7 +192,7 @@ customValue.value="";
 loadData();
 }
 
-// ================= LOAD DATA =================
+// ===== LOAD DATA =====
 function loadData(){
 let d=localStorage.getItem("vaultData");
 if(!d) return;
