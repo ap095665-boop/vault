@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +12,7 @@ button{width:70px;height:60px;margin:5px;font-size:18px;border:none;border-radiu
 .hidden{display:none}
 .box{background:#000;padding:10px;margin:10px;border-radius:10px}
 input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
-.copy{background:#333}
+.copy{background:#333;width:60px;height:35px}
 </style>
 </head>
 
@@ -48,24 +48,24 @@ input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
 <div id="vault" class="hidden">
 <h3>SECURE VAULT</h3>
 
-<h4>Bank</h4>
-<button onclick="addBank()">+ Bank</button>
+<h4>🏦 Bank</h4>
+<button onclick="addBank()">+ Add Bank</button>
 <div id="banks"></div>
 
-<h4>Cards</h4>
-<button onclick="addCard()">+ Card</button>
+<h4>💳 Cards</h4>
+<button onclick="addCard()">+ Add Card</button>
 <div id="cards"></div>
 
-<h4>UPI</h4>
-<button onclick="addUPI()">+ UPI</button>
+<h4>📱 UPI</h4>
+<button onclick="addUPI()">+ Add UPI</button>
 <div id="upi"></div>
 
-<h4>Wallet</h4>
-<button onclick="addWallet()">+ Wallet</button>
+<h4>👛 Wallet</h4>
+<button onclick="addWallet()">+ Add Wallet</button>
 <div id="wallet"></div>
 
-<h4>Custom</h4>
-<button onclick="addCustom()">+ Custom</button>
+<h4>🧩 Custom</h4>
+<button onclick="addCustom()">+ Add Custom</button>
 <div id="custom"></div>
 
 <br>
@@ -74,25 +74,21 @@ input{width:70%;padding:8px;margin:5px;background:#111;color:#0f0;border:none}
 
 <script>
 const secret="262552";
-let input="";
+let calcInput="";
 
-// display
-function press(n){input+=n;display.value=input}
-function clr(){input="";display.value=""}
-
-// check calculator code
+// calculator
+function press(n){calcInput+=n;display.value=calcInput}
+function clr(){calcInput="";display.value=""}
 function check(){
- if(input===secret){
-  fingerprint();
- }
- input="";display.value="";
+ if(calcInput===secret){fingerprint()}
+ calcInput="";display.value=""
 }
 
-// fingerprint auth
+// fingerprint
 async function fingerprint(){
  try{
-  const id=localStorage.getItem("vaultKey");
-  if(!id){
+  const saved=localStorage.getItem("fp");
+  if(!saved){
    const cred=await navigator.credentials.create({
     publicKey:{
      challenge:new Uint8Array(32),
@@ -102,9 +98,9 @@ async function fingerprint(){
      authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required"}
     }
    });
-   localStorage.setItem("vaultKey",btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+   localStorage.setItem("fp",btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
   }else{
-   const raw=Uint8Array.from(atob(id),c=>c.charCodeAt(0));
+   const raw=Uint8Array.from(atob(saved),c=>c.charCodeAt(0));
    await navigator.credentials.get({
     publicKey:{
      challenge:new Uint8Array(32),
@@ -113,7 +109,6 @@ async function fingerprint(){
     }
    });
   }
-
   openVault();
  }catch(e){alert("Fingerprint failed")}
 }
@@ -122,37 +117,42 @@ async function fingerprint(){
 function openVault(){
  document.getElementById("calc").style.display="none";
  document.getElementById("vault").classList.remove("hidden");
- loadData();
+ load();
 }
 
 // lock
 function lock(){location.reload()}
 
-// save/load encrypted
-function saveData(){
- localStorage.setItem("vaultData",btoa(unescape(encodeURIComponent(document.getElementById("vault").innerHTML))));
+// ---------- STORAGE ----------
+function save(){
+ const data=document.getElementById("vault").innerHTML;
+ localStorage.setItem("vaultData",data);
 }
-function loadData(){
- const d=localStorage.getItem("vaultData");
- if(d){
-  document.getElementById("vault").innerHTML=decodeURIComponent(escape(atob(d)));
- }
+function load(){
+ const data=localStorage.getItem("vaultData");
+ if(data){document.getElementById("vault").innerHTML=data}
 }
 
+// auto save typing
+document.addEventListener("input",()=>{save()})
+
 // copy
-function copyText(el){navigator.clipboard.writeText(el.value)}
+function copyText(btn){
+ const val=btn.previousElementSibling.value;
+ navigator.clipboard.writeText(val);
+}
 
 // bank
 let bankCount=0;
 function addBank(){
+ if(bankCount>=10) return alert("Max 10 banks");
  bankCount++;
  let d=document.createElement("div");
  d.className="box";
  d.innerHTML=`Bank ${bankCount}<br>
- <input placeholder="Account/IFSC">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
- banks.appendChild(d);
- saveData();
+ <input placeholder="Account / IFSC / name">
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ banks.appendChild(d); save();
 }
 
 // card
@@ -160,9 +160,10 @@ function addCard(){
  let d=document.createElement("div");
  d.className="box";
  d.innerHTML=`<input placeholder="Card number">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
- cards.appendChild(d);
- saveData();
+ <button class="copy" onclick="copyText(this)">Copy</button>
+ <input placeholder="Expiry / CVV">
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ cards.appendChild(d); save();
 }
 
 // upi
@@ -170,19 +171,17 @@ function addUPI(){
  let d=document.createElement("div");
  d.className="box";
  d.innerHTML=`<input placeholder="UPI ID">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
- upi.appendChild(d);
- saveData();
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ upi.appendChild(d); save();
 }
 
 // wallet
 function addWallet(){
  let d=document.createElement("div");
  d.className="box";
- d.innerHTML=`<input placeholder="Wallet">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
- wallet.appendChild(d);
- saveData();
+ d.innerHTML=`<input placeholder="Wallet / password">
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ wallet.appendChild(d); save();
 }
 
 // custom
@@ -193,9 +192,8 @@ function addCustom(){
  d.className="box";
  d.innerHTML=`${t}<br>
  <input placeholder="Data">
- <button class="copy" onclick="copyText(this.previousElementSibling)">Copy</button>`;
- custom.appendChild(d);
- saveData();
+ <button class="copy" onclick="copyText(this)">Copy</button>`;
+ custom.appendChild(d); save();
 }
 </script>
 </body>
