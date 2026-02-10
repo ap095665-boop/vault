@@ -11,19 +11,13 @@ button{padding:10px 16px;border:none;border-radius:10px;background:#111;color:#0
 input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
 .section{background:#111;margin:12px;padding:12px;border-radius:12px}
 .copy{margin-top:6px;background:#222}
-#addBtn{
-position:fixed;bottom:20px;right:20px;
-width:60px;height:60px;border-radius:50%;
-font-size:28px;background:#00ff88;color:#000}
-#popup{
-position:fixed;top:0;left:0;right:0;bottom:0;
-background:#000;display:none;overflow:auto;padding:20px}
+#addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
+#popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
 </style>
 </head>
 
 <body>
 
-<!-- LOCK -->
 <div id="lock" class="center">
 <h2>Enter Code</h2>
 <input id="pass">
@@ -31,7 +25,6 @@ background:#000;display:none;overflow:auto;padding:20px}
 <button onclick="unlock()">Unlock</button>
 </div>
 
-<!-- VAULT -->
 <div id="vault" style="display:none;padding:15px">
 <h2 style="text-align:center">PRIVATE VAULT</h2>
 <div id="dataArea"></div>
@@ -39,7 +32,6 @@ background:#000;display:none;overflow:auto;padding:20px}
 
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
 
-<!-- POPUP -->
 <div id="popup">
 <h3>Add Data</h3>
 
@@ -71,7 +63,6 @@ background:#000;display:none;overflow:auto;padding:20px}
 <script>
 const code="262552";
 
-// unlock
 function unlock(){
  if(pass.value===code){
   lock.style.display="none";
@@ -81,11 +72,10 @@ function unlock(){
  }else alert("Wrong code");
 }
 
-// popup control
 function openPopup(){popup.style.display="block"}
 function closePopup(){popup.style.display="none"}
 
-// add dynamic fields
+// add fields
 function addBank(){
  bankFields.innerHTML+=`
  <div class="section">
@@ -119,72 +109,106 @@ function addWallet(){
  walletFields.innerHTML+=`
  <div class="section">
  <input placeholder="Wallet name">
- <input placeholder="ID / email">
+ <input placeholder="ID/email">
  <input placeholder="Password/PIN">
  </div>`;
 }
 
-// SAVE MULTIPLE ENTRIES
+// SAVE CORRECTLY
 function saveData(){
 
- let newEntry={
-  bank:bankFields.innerHTML,
-  card:cardFields.innerHTML,
-  upi:upiFields.innerHTML,
-  wallet:walletFields.innerHTML,
-  customTitle:customTitle.value,
-  customValue:customValue.value
- };
+ let entry={bank:[],card:[],upi:[],wallet:[],customTitle:customTitle.value,customValue:customValue.value};
 
- let existing=localStorage.getItem("vaultData");
- let arr= existing ? JSON.parse(existing) : [];
+// bank
+bankFields.querySelectorAll(".section").forEach(sec=>{
+ let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
+ entry.bank.push(vals);
+});
 
- arr.push(newEntry);
+// card
+cardFields.querySelectorAll(".section").forEach(sec=>{
+ let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
+ entry.card.push(vals);
+});
 
- localStorage.setItem("vaultData",JSON.stringify(arr));
+// upi
+upiFields.querySelectorAll(".section").forEach(sec=>{
+ let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
+ entry.upi.push(vals);
+});
 
- popup.style.display="none";
+// wallet
+walletFields.querySelectorAll(".section").forEach(sec=>{
+ let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
+ entry.wallet.push(vals);
+});
 
- // clear fields after save
- bankFields.innerHTML="";
- cardFields.innerHTML="";
- upiFields.innerHTML="";
- walletFields.innerHTML="";
- customTitle.value="";
- customValue.value="";
+let existing=localStorage.getItem("vaultData");
+let arr= existing ? JSON.parse(existing) : [];
+arr.push(entry);
 
- loadData();
+localStorage.setItem("vaultData",JSON.stringify(arr));
+
+popup.style.display="none";
+bankFields.innerHTML="";
+cardFields.innerHTML="";
+upiFields.innerHTML="";
+walletFields.innerHTML="";
+customTitle.value="";
+customValue.value="";
+
+loadData();
 }
 
-// LOAD ALL ENTRIES
+// LOAD
 function loadData(){
- let d=localStorage.getItem("vaultData");
- if(!d) return;
+let d=localStorage.getItem("vaultData");
+if(!d) return;
 
- let arr=JSON.parse(d);
- let html="";
+let arr=JSON.parse(d);
+let html="";
 
- arr.forEach((data,index)=>{
+arr.forEach((data,index)=>{
 
-  if(data.bank){
-   html+="<h3>BANK "+(index+1)+"</h3>"+data.bank;
-  }
-  if(data.card){
-   html+="<h3>CARD "+(index+1)+"</h3>"+data.card;
-  }
-  if(data.upi){
-   html+="<h3>UPI "+(index+1)+"</h3>"+data.upi;
-  }
-  if(data.wallet){
-   html+="<h3>WALLET "+(index+1)+"</h3>"+data.wallet;
-  }
-  if(data.customTitle){
-   html+=`<div class="section"><b>${data.customTitle}</b><br>${data.customValue}</div>`;
-  }
+data.bank.forEach(b=>{
+ html+=`<div class="section"><b>BANK</b><br>
+ ${b.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+});
 
- });
+data.card.forEach(c=>{
+ html+=`<div class="section"><b>CARD</b><br>
+ ${c.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+});
 
- dataArea.innerHTML=html;
+data.upi.forEach(u=>{
+ html+=`<div class="section"><b>UPI</b><br>
+ ${u.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+});
+
+data.wallet.forEach(w=>{
+ html+=`<div class="section"><b>WALLET</b><br>
+ ${w.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+});
+
+if(data.customTitle){
+ html+=`<div class="section"><b>${data.customTitle}</b><br>
+ <input value="${data.customValue}" readonly>
+ <button class="copy" onclick="copy('${data.customValue}')">Copy</button>
+ </div>`;
+}
+
+});
+
+dataArea.innerHTML=html;
+}
+
+function copy(t){
+navigator.clipboard.writeText(t);
+alert("Copied");
 }
 </script>
 </body>
