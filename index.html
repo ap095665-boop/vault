@@ -70,7 +70,7 @@ box-shadow:0 0 8px #000;
 <div id="dataArea"></div>
 </div>
 
-<button id="searchBtn" onclick="openSearch()" style="position:fixed;bottom:90px;right:20px;width:55px;height:55px;border-radius:50%;font-size:20px;background:#222;color:#00ff88;">🔍</button>
+<button id="searchBtn" onclick="openSearch()" style="display:none;position:fixed;bottom:90px;right:20px;width:55px;height:55px;border-radius:50%;font-size:20px;background:#222;color:#00ff88;">🔍</button>
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
 
 <!-- SEARCH POPUP -->
@@ -133,7 +133,7 @@ function submitPIN(){
   entered="";display.innerText="";lockTitle.innerText="Enter PIN";return;
  }
  if(entered===saved){
-  lock.style.display="none";vault.style.display="block";addBtn.style.display="block";loadData();
+  lock.style.display="none";vault.style.display="block";addBtn.style.display="block";searchBtn.style.display="block";loadData();
  }else alert("Wrong PIN");
  clearCode();
 }
@@ -208,18 +208,52 @@ function openSearch(){
 function closeSearch(){searchPopup.style.display="none";}
 
 function initSearch(){
- let input=document.getElementById("searchInput");
- input.oninput=function(){
-  let query=this.value.toLowerCase();
-  let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");let html="";
-  arr.forEach((data,i)=>{
-   if(JSON.stringify(data).toLowerCase().includes(query)){
-    html+=`<div class="entryCard"><div onclick="openEntryPopup(${i})">${data.title}</div></div>`;
-   }
-  });
-  searchResults.innerHTML=html;
- };
-}
+input.addEventListener("input",function(){
+
+ let query=this.value.toLowerCase().trim();
+ if(query===""){
+  document.getElementById("searchResults").innerHTML="";
+  return;
+ }
+
+ let d=localStorage.getItem("vaultData");
+ if(!d) return;
+
+ let arr=JSON.parse(d);
+ let html="";
+
+ arr.forEach((data,i)=>{
+
+  // search in title
+  let titleMatch = data.title.toLowerCase().includes(query);
+
+  // search inside fields
+  let deepMatch=false;
+
+  let all = [
+   ...data.bank.flat(),
+   ...data.card.flat(),
+   ...data.upi.flat(),
+   ...data.wallet.flat(),
+   data.customTitle || "",
+   data.customValue || ""
+  ];
+
+  deepMatch = all.some(v => v.toLowerCase().includes(query));
+
+  if(titleMatch || deepMatch){
+   html+=`
+   <div class="entryCard" style="margin-top:12px;">
+     <div onclick="openEntryPopup(${i})">${data.title}</div>
+   </div>
+   `;
+  }
+
+ });
+
+ document.getElementById("searchResults").innerHTML=html;
+
+});
 
 // service worker
 if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
