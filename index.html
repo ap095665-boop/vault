@@ -1,1 +1,36 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Storage Test</title>
+</head>
+<body style="background:black;color:#00ff88;font-family:monospace">
+
+<h2>Secure Storage Test</h2>
+
+<button onclick="create()">Create Vault</button>
+<button onclick="unlock()">Unlock Vault</button>
+<button onclick="reset()">Reset Vault</button>
+
 <script src="secure-storage.js"></script>
+
+<script>
+
+async function create(){
+ await createVault("1234");
+ alert("Vault created");
+}
+
+async function unlock(){
+ let ok = await unlockVault("1234");
+ alert("Unlock: " + ok);
+}
+
+function reset(){
+ resetVault();
+}
+
+</script>
+
+</body>
+</html>
