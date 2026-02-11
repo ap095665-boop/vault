@@ -15,7 +15,7 @@ input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:non
 .copy{background:#222;margin-top:6px}
 #addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
 #popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
-.accordion{background:#111;margin:12px;border-radius:12px}
+
 .accHeader{padding:14px;font-size:18px;cursor:pointer;background:#111;border-radius:12px}
 .accContent{display:none;padding:10px}
  /* luxury gradient animated background */
@@ -296,10 +296,12 @@ content+=`<div class="section"><b>${data.customTitle}</b><br>
 }
 
 html+=`
-<div class="accordion">
-<div class="accHeader" onclick="openEntryPopup(${i})">${data.title}</div><div class="accContent" id="acc${i}">
-${content}
-</div>
+<div class="accHeader">
+  <span onclick="openEntryPopup(${i})">${data.title}</span>
+  <button onclick="deleteEntry(${i})"
+    style="float:right;background:none;border:none;color:red;font-size:18px">
+    ❌
+  </button>
 </div>
 `;
 
@@ -308,10 +310,7 @@ ${content}
 dataArea.innerHTML=html;
 }
 
-function toggleAcc(i){
-let el=document.getElementById("acc"+i);
-el.style.display = el.style.display==="block"?"none":"block";
-}
+
 
 function copy(t){
 navigator.clipboard.writeText(t);
@@ -370,6 +369,19 @@ if("serviceWorker" in navigator){
 
  function closeEntryPopup(){
  entryPopup.style.display="none";
+}
+ function deleteEntry(index){
+
+ if(!confirm("Delete this entry?")) return;
+
+ let d = localStorage.getItem("vaultData");
+ let arr = JSON.parse(d);
+
+ arr.splice(index,1);
+
+ localStorage.setItem("vaultData", JSON.stringify(arr));
+
+ loadData(); // refresh screen
 }
 </script>
 
