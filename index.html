@@ -95,9 +95,48 @@ font-size:22px;
 <h2>PRIVATE VAULT</h2>
 <div id="dataArea"></div>
 </div>
+<button id="searchBtn" onclick="openSearch()" style="
+position:fixed;
+bottom:90px;
+right:20px;
+width:55px;
+height:55px;
+border-radius:50%;
+font-size:20px;
+background:#222;
+color:#00ff88;
+">🔍</button>
 
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
+<!-- SEARCH POPUP -->
+<div id="searchPopup" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:#000;
+z-index:999;
+padding:20px;
+overflow:auto;
+">
 
+<button onclick="closeSearch()" style="
+position:fixed;
+top:10px;
+right:10px;
+font-size:18px;
+">❌</button>
+
+<h3>Search Vault</h3>
+
+<input id="searchInput" placeholder="Type to search..."
+style="width:100%;padding:12px;margin:10px 0;font-size:18px;">
+
+<div id="searchResults"></div>
+
+</div>
 <!-- POPUP -->
 <div id="popup">
 <h3>Add Data</h3>
@@ -408,6 +447,48 @@ if("serviceWorker" in navigator){
 
  loadData(); // refresh screen
 }
+
+ function openSearch(){
+ searchPopup.style.display="block";
+ searchInput.value="";
+ searchResults.innerHTML="";
+}
+
+function closeSearch(){
+ searchPopup.style.display="none";
+}
+
+// live search
+searchInput.addEventListener("input",function(){
+
+ let query=this.value.toLowerCase();
+
+ let d=localStorage.getItem("vaultData");
+ if(!d) return;
+
+ let arr=JSON.parse(d);
+
+ let html="";
+
+ arr.forEach(data=>{
+
+  let content = JSON.stringify(data).toLowerCase();
+
+  if(content.includes(query)){
+
+   html+=`
+   <div class="entryCard" style="margin-top:12px;">
+     <div onclick="openEntryPopup(${i})">${data.title}</div>
+   </div>
+   `;
+  }
+
+ });
+
+ searchResults.innerHTML=html;
+});
+
+ 
 </script>
 
 </body>
