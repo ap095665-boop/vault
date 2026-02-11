@@ -10,66 +10,40 @@ button{padding:12px;border:none;border-radius:10px;background:#111;color:#00ff88
 .keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:20px}
 .key{width:80px;height:80px;font-size:22px;border-radius:12px}
 .display{width:240px;height:50px;margin:20px auto;background:#000;border-radius:10px;font-size:26px;display:flex;align-items:center;justify-content:center}
-.section{background:#fff;margin:12px;padding:12px;border-radius:12px;text-align:left}
+.section{background:#111;margin:12px;padding:12px;border-radius:12px;text-align:left}
 input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
 .copy{background:#222;margin-top:6px}
 #addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
-#popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;overflow:auto;padding:20px}
 
-.accHeader{padding:14px;font-size:18px;cursor:pointer;background:#111;border-radius:12px}
-.accContent{display:none;padding:10px}
- /* luxury gradient animated background */
 #bgLuxury{
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:100%;
-z-index:-1;
+position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;
 background:linear-gradient(270deg,#0b0b0b,#001a14,#00332a,#0b0b0b);
 background-size:800% 800%;
 animation:luxMove 18s ease infinite;
 }
-
 @keyframes luxMove{
 0%{background-position:0% 50%}
 50%{background-position:100% 50%}
 100%{background-position:0% 50%}
 }
 
- /* entry list card style (replaces accordion) */
-
 .entryCard{
-background:#111;
-margin:12px;
-padding:18px;
-border-radius:16px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-font-size:18px;
+background:#111;margin:12px;padding:18px;border-radius:16px;
+display:flex;justify-content:space-between;align-items:center;font-size:18px;
 box-shadow:0 0 8px #000;
 }
-
-.entryTitle{
-color:#00ff88;
-}
-
-.deleteBtn{
-background:none;
-border:none;
-color:#ff4d4d;
-font-size:22px;
-}
+.entryTitle{color:#00ff88}
+.deleteBtn{background:none;border:none;color:#ff4d4d;font-size:22px}
 </style>
 
- <link rel="manifest" href="manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0b0b0b">
 </head>
 
 <body>
 <div id="bgLuxury"></div>
-<!-- LOCK SCREEN -->
+
+<!-- LOCK -->
 <div id="lock">
 <h2 id="lockTitle">Create 4 Digit PIN</h2>
 <div class="display" id="display"></div>
@@ -95,53 +69,23 @@ font-size:22px;
 <h2>PRIVATE VAULT</h2>
 <div id="dataArea"></div>
 </div>
-<button id="searchBtn" onclick="openSearch()" style="
-position:fixed;
-bottom:90px;
-right:20px;
-width:55px;
-height:55px;
-border-radius:50%;
-font-size:20px;
-background:#222;
-color:#00ff88;
-">🔍</button>
 
+<button id="searchBtn" onclick="openSearch()" style="position:fixed;bottom:90px;right:20px;width:55px;height:55px;border-radius:50%;font-size:20px;background:#222;color:#00ff88;">🔍</button>
 <button id="addBtn" onclick="openPopup()" style="display:none">+</button>
+
 <!-- SEARCH POPUP -->
-<div id="searchPopup" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:#000;
-z-index:999;
-padding:20px;
-overflow:auto;
-">
-
-<button onclick="closeSearch()" style="
-position:fixed;
-top:10px;
-right:10px;
-font-size:18px;
-">❌</button>
-
+<div id="searchPopup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:999;padding:20px;overflow:auto;">
+<button onclick="closeSearch()" style="position:fixed;top:10px;right:10px;font-size:18px;">❌</button>
 <h3>Search Vault</h3>
-
-<input id="searchInput" placeholder="Type to search..."
-style="width:100%;padding:12px;margin:10px 0;font-size:18px;">
-
+<input id="searchInput" placeholder="Type to search..." style="width:100%;padding:12px;margin:10px 0;font-size:18px;">
 <div id="searchResults"></div>
-
 </div>
-<!-- POPUP -->
-<div id="popup">
+
+<!-- ADD POPUP -->
+<div id="popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;overflow:auto;padding:20px">
 <h3>Add Data</h3>
- <h4>Entry Title</h4>
-<input id="entryTitle" placeholder="Example: Personal Bank / Cards">
+<h4>Entry Title</h4>
+<input id="entryTitle">
 
 <h4>🏦 Bank</h4>
 <div id="bankFields"></div>
@@ -160,335 +104,125 @@ style="width:100%;padding:12px;margin:10px 0;font-size:18px;">
 <button onclick="addWallet()">+ Add Wallet</button>
 
 <h4>🧩 Custom</h4>
-<input id="customTitle" placeholder="Custom title">
-<input id="customValue" placeholder="Custom data">
+<input id="customTitle">
+<input id="customValue">
 
 <br><br>
 <button onclick="saveData()">SAVE</button>
 <button onclick="closePopup()">CANCEL</button>
 </div>
-<!-- ENTRY VIEW POPUP -->
-<div id="entryPopup" style="
-display:none;
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:#000;
-overflow:auto;
-padding:20px;
-z-index:999;
-">
 
-<button onclick="closeEntryPopup()" style="
-position:fixed;
-top:10px;
-right:10px;
-font-size:18px;
-">❌ Close</button>
-
+<!-- VIEW ENTRY -->
+<div id="entryPopup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;overflow:auto;padding:20px;z-index:999;">
+<button onclick="closeEntryPopup()" style="position:fixed;top:10px;right:10px;font-size:18px;">❌ Close</button>
 <div id="popupContent"></div>
-
 </div>
-<script>
-// ===== PIN SYSTEM =====
-let entered="";
-function press(n){
- entered+=n;
- display.innerText="•".repeat(entered.length);
-}
-function clearCode(){entered="";display.innerText="";}
 
+<script>
+let entered="";
+
+// PIN
+function press(n){entered+=n;display.innerText="•".repeat(entered.length);}
+function clearCode(){entered="";display.innerText="";}
 function submitPIN(){
  let saved=localStorage.getItem("vaultPIN");
-
- // first time set pin
  if(!saved){
   if(entered.length!==4){alert("Enter 4 digit PIN");return;}
   localStorage.setItem("vaultPIN",entered);
   alert("PIN saved permanently");
-  entered="";display.innerText="";
-  lockTitle.innerText="Enter PIN";
-  return;
+  entered="";display.innerText="";lockTitle.innerText="Enter PIN";return;
  }
-
- // login
  if(entered===saved){
-  lock.style.display="none";
-  vault.style.display="block";
-  addBtn.style.display="block";
-  loadData();
+  lock.style.display="none";vault.style.display="block";addBtn.style.display="block";loadData();
  }else alert("Wrong PIN");
-
  clearCode();
 }
+if(localStorage.getItem("vaultPIN")) lockTitle.innerText="Enter PIN";
 
-if(localStorage.getItem("vaultPIN")){
- document.getElementById("lockTitle").innerText="Enter PIN";
-}
-
-// ===== POPUP =====
+// popup
 function openPopup(){popup.style.display="block";}
 function closePopup(){popup.style.display="none";}
 
-// ===== ADD FIELDS =====
-function addBank(){
- bankFields.innerHTML+=`
- <div class="section">
- <input placeholder="Account number">
- <input placeholder="IFSC">
- <input placeholder="Bank name">
- <input placeholder="Branch">
- </div>`;
-}
+// add fields
+function addBank(){bankFields.innerHTML+=`<div class="section"><input placeholder="Account"><input placeholder="IFSC"><input placeholder="Bank"><input placeholder="Branch"></div>`;}
+function addCard(){cardFields.innerHTML+=`<div class="section"><input placeholder="Card"><input placeholder="Name"><input placeholder="Expiry"><input placeholder="CVV"><input placeholder="PIN"></div>`;}
+function addUpi(){upiFields.innerHTML+=`<div class="section"><input placeholder="UPI"><input placeholder="Name"></div>`;}
+function addWallet(){walletFields.innerHTML+=`<div class="section"><input placeholder="Wallet"><input placeholder="ID"><input placeholder="Password"></div>`;}
 
-function addCard(){
- cardFields.innerHTML+=`
- <div class="section">
- <input placeholder="Card number">
- <input placeholder="Name">
- <input placeholder="Expiry">
- <input placeholder="CVV">
- <input placeholder="PIN hint">
- </div>`;
-}
-
-function addUpi(){
- upiFields.innerHTML+=`
- <div class="section">
- <input placeholder="UPI ID">
- <input placeholder="Name">
- </div>`;
-}
-
-function addWallet(){
- walletFields.innerHTML+=`
- <div class="section">
- <input placeholder="Wallet name">
- <input placeholder="ID/email">
- <input placeholder="Password/PIN">
- </div>`;
-}
-
-// ===== SAVE =====
+// save
 function saveData(){
- let entry={
- title: entryTitle.value || "Untitled",
- bank:[],card:[],upi:[],wallet:[],
- customTitle:customTitle.value,
- customValue:customValue.value
-};
-
-bankFields.querySelectorAll(".section").forEach(sec=>{
- let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
- entry.bank.push(vals);
-});
-cardFields.querySelectorAll(".section").forEach(sec=>{
- let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
- entry.card.push(vals);
-});
-upiFields.querySelectorAll(".section").forEach(sec=>{
- let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
- entry.upi.push(vals);
-});
-walletFields.querySelectorAll(".section").forEach(sec=>{
- let vals=[...sec.querySelectorAll("input")].map(i=>i.value);
- entry.wallet.push(vals);
-});
-
-let existing=localStorage.getItem("vaultData");
-let arr= existing ? JSON.parse(existing) : [];
-arr.push(entry);
-localStorage.setItem("vaultData",JSON.stringify(arr));
-
-popup.style.display="none";
-bankFields.innerHTML="";
-cardFields.innerHTML="";
-upiFields.innerHTML="";
-walletFields.innerHTML="";
-customTitle.value="";
-customValue.value="";
- entryTitle.value="";
-loadData();
+ let entry={title:entryTitle.value||"Untitled",bank:[],card:[],upi:[],wallet:[],customTitle:customTitle.value,customValue:customValue.value};
+ bankFields.querySelectorAll(".section").forEach(sec=>entry.bank.push([...sec.querySelectorAll("input")].map(i=>i.value)));
+ cardFields.querySelectorAll(".section").forEach(sec=>entry.card.push([...sec.querySelectorAll("input")].map(i=>i.value)));
+ upiFields.querySelectorAll(".section").forEach(sec=>entry.upi.push([...sec.querySelectorAll("input")].map(i=>i.value)));
+ walletFields.querySelectorAll(".section").forEach(sec=>entry.wallet.push([...sec.querySelectorAll("input")].map(i=>i.value)));
+ let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");arr.push(entry);
+ localStorage.setItem("vaultData",JSON.stringify(arr));
+ closePopup();bankFields.innerHTML="";cardFields.innerHTML="";upiFields.innerHTML="";walletFields.innerHTML="";
+ customTitle.value="";customValue.value="";entryTitle.value="";loadData();
 }
 
-// ===== LOAD + ACCORDION =====
+// load
 function loadData(){
-let d=localStorage.getItem("vaultData");
-if(!d) return;
-let arr=JSON.parse(d);
-let html="";
-
-arr.forEach((data,i)=>{
-
-let content="";
-
-data.bank.forEach(b=>{
-content+=`<div class="section"><b>BANK</b><br>
-${b.map(v=>`<input value="${v}" readonly>
-<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
-</div>`;
-});
-
-data.card.forEach(c=>{
-content+=`<div class="section"><b>CARD</b><br>
-${c.map(v=>`<input value="${v}" readonly>
-<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
-</div>`;
-});
-
-data.upi.forEach(u=>{
-content+=`<div class="section"><b>UPI</b><br>
-${u.map(v=>`<input value="${v}" readonly>
-<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
-</div>`;
-});
-
-data.wallet.forEach(w=>{
-content+=`<div class="section"><b>WALLET</b><br>
-${w.map(v=>`<input value="${v}" readonly>
-<button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
-</div>`;
-});
-
-if(data.customTitle){
-content+=`<div class="section"><b>${data.customTitle}</b><br>
-<input value="${data.customValue}" readonly>
-<button class="copy" onclick="copy('${data.customValue}')">Copy</button>
-</div>`;
-}
-
-html+=`
-<div class="entryCard">
-  <div class="entryTitle" onclick="openEntryPopup(${i})">
-    ${data.title}
-  </div>
-
-  <button class="deleteBtn" onclick="deleteEntry(${i})">❌</button>
-</div>
-`;
-
-});
-
-dataArea.innerHTML=html;
-}
-
-
-
-function copy(t){
-navigator.clipboard.writeText(t);
-alert("Copied");
-}
-
-if("serviceWorker" in navigator){
- navigator.serviceWorker.register("sw.js");
-}
- function openEntryPopup(index){
-
- let d=localStorage.getItem("vaultData");
- let arr=JSON.parse(d);
- let data=arr[index];
-
- let content="";
-
- data.bank.forEach(b=>{
- content+=`<div class="section"><b>BANK</b><br>
- ${b.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
+ let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");let html="";
+ arr.forEach((data,i)=>{
+  html+=`<div class="entryCard"><div class="entryTitle" onclick="openEntryPopup(${i})">${data.title}</div>
+  <button class="deleteBtn" onclick="deleteEntry(${i})">❌</button></div>`;
  });
-
- data.card.forEach(c=>{
- content+=`<div class="section"><b>CARD</b><br>
- ${c.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
- });
-
- data.upi.forEach(u=>{
- content+=`<div class="section"><b>UPI</b><br>
- ${u.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
- });
-
- data.wallet.forEach(w=>{
- content+=`<div class="section"><b>WALLET</b><br>
- ${w.map(v=>`<input value="${v}" readonly>
- <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
- </div>`;
- });
-
- if(data.customTitle){
- content+=`<div class="section"><b>${data.customTitle}</b><br>
- <input value="${data.customValue}" readonly>
- <button class="copy" onclick="copy('${data.customValue}')">Copy</button>
- </div>`;
- }
-
- popupContent.innerHTML=content;
- entryPopup.style.display="block";
+ dataArea.innerHTML=html;
 }
 
- function closeEntryPopup(){
- entryPopup.style.display="none";
+// view entry
+function openEntryPopup(index){
+ let data=JSON.parse(localStorage.getItem("vaultData"))[index];let content="";
+ ["bank","card","upi","wallet"].forEach(type=>{
+  data[type].forEach(group=>{
+   content+=`<div class="section"><b>${type.toUpperCase()}</b><br>
+   ${group.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+   </div>`;
+  });
+ });
+ if(data.customTitle) content+=`<div class="section"><b>${data.customTitle}</b><br><input value="${data.customValue}" readonly>
+ <button class="copy" onclick="copy('${data.customValue}')">Copy</button></div>`;
+ popupContent.innerHTML=content;entryPopup.style.display="block";
 }
- function deleteEntry(index){
+function closeEntryPopup(){entryPopup.style.display="none";}
 
- if(!confirm("Delete this entry?")) return;
-
- let d = localStorage.getItem("vaultData");
- let arr = JSON.parse(d);
-
- arr.splice(index,1);
-
- localStorage.setItem("vaultData", JSON.stringify(arr));
-
- loadData(); // refresh screen
+// delete
+function deleteEntry(i){
+ if(!confirm("Delete this entry?"))return;
+ let arr=JSON.parse(localStorage.getItem("vaultData"));arr.splice(i,1);
+ localStorage.setItem("vaultData",JSON.stringify(arr));loadData();
 }
 
- function openSearch(){
+// copy
+function copy(t){navigator.clipboard.writeText(t);alert("Copied");}
+
+// SEARCH
+function openSearch(){
  searchPopup.style.display="block";
  searchInput.value="";
  searchResults.innerHTML="";
+ initSearch();
+}
+function closeSearch(){searchPopup.style.display="none";}
+
+function initSearch(){
+ let input=document.getElementById("searchInput");
+ input.oninput=function(){
+  let query=this.value.toLowerCase();
+  let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");let html="";
+  arr.forEach((data,i)=>{
+   if(JSON.stringify(data).toLowerCase().includes(query)){
+    html+=`<div class="entryCard"><div onclick="openEntryPopup(${i})">${data.title}</div></div>`;
+   }
+  });
+  searchResults.innerHTML=html;
+ };
 }
 
-function closeSearch(){
- searchPopup.style.display="none";
-}
-
-// live search
-searchInput.addEventListener("input",function(){
-
- let query=this.value.toLowerCase();
-
- let d=localStorage.getItem("vaultData");
- if(!d) return;
-
- let arr=JSON.parse(d);
-
- let html="";
-
- arr.forEach(data=>{
-
-  let content = JSON.stringify(data).toLowerCase();
-
-  if(content.includes(query)){
-
-   html+=`
-   <div class="entryCard" style="margin-top:12px;">
-     <div onclick="openEntryPopup(${i})">${data.title}</div>
-   </div>
-   `;
-  }
-
- });
-
- searchResults.innerHTML=html;
-});
-
- 
+// service worker
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 
 </body>
