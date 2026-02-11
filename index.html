@@ -6,205 +6,175 @@
 
 <style>
 body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
-.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:20px}
-.key{width:80px;height:80px;font-size:22px;border-radius:12px;background:#111;color:#00ff88;border:none}
-.display{width:240px;height:50px;margin:20px auto;background:#111;border-radius:10px;font-size:26px;display:flex;align-items:center;justify-content:center}
-
 .entryCard{background:#fff;color:#000;margin:12px;padding:14px;border-radius:12px}
 input{width:90%;padding:12px;margin:6px;background:#fff;color:#000;border:none;border-radius:8px}
-
-button{padding:12px;border:none;border-radius:10px;background:#111;color:#00ff88}
-#addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;background:#00ff88;color:#000;font-size:26px;display:none}
-.popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;display:none;padding:20px;overflow:auto}
+button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;color:#00ff88}
+.popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;padding:20px;display:none;overflow:auto}
 </style>
 </head>
 
 <body>
 
-<!-- LOCK -->
-<div id="lock">
-<h2 id="lockTitle">Create PIN</h2>
-<div class="display" id="display"></div>
-
-<div class="keypad">
-<button class="key" onclick="press(1)">1</button>
-<button class="key" onclick="press(2)">2</button>
-<button class="key" onclick="press(3)">3</button>
-<button class="key" onclick="press(4)">4</button>
-<button class="key" onclick="press(5)">5</button>
-<button class="key" onclick="press(6)">6</button>
-<button class="key" onclick="press(7)">7</button>
-<button class="key" onclick="press(8)">8</button>
-<button class="key" onclick="press(9)">9</button>
-<button class="key" onclick="clearCode()">C</button>
-<button class="key" onclick="press(0)">0</button>
-<button class="key" onclick="submitPIN()">OK</button>
-</div>
+<!-- LOGIN -->
+<div id="loginPopup" class="popup" style="display:block">
+<h3>Enter PIN</h3>
+<input id="pinInput" type="password">
+<button onclick="login()">Unlock</button>
 </div>
 
-<!-- VAULT -->
-<div id="vault" style="display:none;padding:15px">
 <h2>Secure Vault</h2>
 <div id="dataArea"></div>
-</div>
+<button onclick="openAdd()">+ Add Entry</button>
 
-<button id="addBtn" onclick="openPopup()">+</button>
-
-<!-- ADD POPUP -->
-<div id="popup" class="popup">
-<h3>Add Entry</h3>
-<input id="entryTitle" placeholder="Title">
-
-<input id="bankName" placeholder="Bank name">
-<input id="accountNo" placeholder="Account number">
-
+<!-- ADD / EDIT -->
+<div id="addPopup" class="popup">
+<h3 id="formTitle">Add Entry</h3>
+<div id="rows"></div>
+<button onclick="addRow()">+ Add Row</button>
 <button onclick="saveEntry()">Save</button>
-<button onclick="closePopup()">Cancel</button>
+<button onclick="closeAdd()">Cancel</button>
 </div>
 
-<script src="secure-storage.js"></script>
+<!-- VIEW POPUP -->
+<div id="viewPopup" class="popup">
+<h3>Entry</h3>
+<div id="viewData"></div>
+<button onclick="editEntry()">Edit</button>
+<button onclick="closeView()">Close</button>
+</div>
+
+<script src="crypto-engine.js"></script>
 
 <script>
-let entered="";
 
-/* PIN INPUT */
-function press(n){entered+=n;display.innerText="•".repeat(entered.length);}
-function clearCode(){entered="";display.innerText="";}
+let actionLock=false;
+let editIndex=null;
 
 /* LOGIN */
-async function submitPIN(){
+async function login(){
+ const pin=pinInput.value;
 
- let storedSalt = localStorage.getItem("vaultSalt");
-
- if(!storedSalt){
-  if(entered.length!==4){alert("Enter 4 digit PIN");return;}
-  await createVault(entered);
-  alert("Vault created");
-  entered="";display.innerText="";
-  lockTitle.innerText="Enter PIN";
+ let salt=localStorage.getItem("vaultSalt");
+ if(!salt){
+  await createVault(pin);
+  loginPopup.style.display="none";
+  loadEntries();
   return;
  }
 
- let ok = await unlockVault(entered);
-
+ let ok=await unlockVault(pin);
  if(ok){
- lock.style.display="none";
- vault.style.display="block";
- addBtn.style.display="block";
-
- upgradeSchema();   // NEW
- loadEntries();
-}else{
-  alert("Wrong PIN");
- }
-
- clearCode();
+  loginPopup.style.display="none";
+  loadEntries();
+ }else alert("Wrong PIN");
 }
 
-/* POPUP */
-function openPopup(){popup.style.display="block";}
-function closePopup(){popup.style.display="none";}
-
-/* SAVE ENTRY */
-async function saveEntry(){
-
- if(!entryTitle.value){alert("Title required");return;}
-
- let newEntry={
-  title:entryTitle.value,
-  bank:bankName.value,
-  account:accountNo.value
- };
-
- // duplicate check
- let dup=vaultMemory.entries.find(e=>e.title===newEntry.title);
- if(dup){alert("Duplicate title");return;}
-
- vaultMemory.entries.push(newEntry);
- await saveVault();
-
- closePopup();
- loadEntries();
-}
-
+/* LOAD */
 function loadEntries(){
-
  let html="";
-
  vaultMemory.entries.forEach((e,i)=>{
-
+  let title=e.rows[0]?.value||"Untitled";
   html+=`
   <div class="entryCard">
-
-    <div>
-      <div class="entryTitle">${e.title}</div>
-
-      <div>${e.bank?.name || ""}</div>
-      <div>${e.bank?.account || ""}</div>
-
-    </div>
-
-    <button class="deleteBtn" onclick="deleteEntry(${i})">Delete</button>
-
-  </div>
-  `;
-
+    ${title}
+    <button onclick="viewEntry(${i})">Open</button>
+    <button onclick="deleteEntry(${i})">Delete</button>
+  </div>`;
  });
-
  dataArea.innerHTML=html;
 }
 
-function upgradeSchema(){
+/* ADD ENTRY */
+function openAdd(){
+ editIndex=null;
+ rows.innerHTML="";
+ createDefaultRows();
+ addPopup.style.display="block";
+}
 
- if(!vaultMemory || !vaultMemory.entries) return;
+function createDefaultRows(){
+ addRow("Title");
+ addRow("Name");
+ addRow("Data");
+ addRow("Sub Data");
+}
 
- vaultMemory.entries = vaultMemory.entries.map(entry => {
+function addRow(label="Extra"){
+ rows.innerHTML+=`
+ <div>
+  <input placeholder="Label" value="${label}">
+  <input placeholder="Value">
+ </div>`;
+}
 
-  // already upgraded → skip
-  if(entry.bank && typeof entry.bank === "object") return entry;
+function closeAdd(){ addPopup.style.display="none"; }
 
-  // convert old entry
-  return {
-   title: entry.title || "",
+/* SAVE */
+async function saveEntry(){
+ if(actionLock) return;
+ actionLock=true;
 
-   bank:{
-    name: entry.bank || "",
-    account: entry.account || "",
-    ifsc: "",
-    branch: ""
-   },
-
-   card:{
-    number:"",
-    expiry:"",
-    cvv:""
-   },
-
-   upi:{
-    id:""
-   },
-
-   wallet:{
-    id:"",
-    pass:""
-   },
-
-   custom:{
-    title:"",
-    value:""
-   }
-  };
-
+ let entry={rows:[]};
+ rows.querySelectorAll("div").forEach(r=>{
+  let inputs=r.querySelectorAll("input");
+  entry.rows.push({label:inputs[0].value,value:inputs[1].value});
  });
 
+ if(editIndex!==null){
+  vaultMemory.entries[editIndex]=entry;
+ }else{
+  vaultMemory.entries.push(entry);
+ }
+
+ await saveVault();
+ closeAdd();
+ loadEntries();
+ actionLock=false;
 }
- 
+
+/* VIEW */
+function viewEntry(i){
+ let entry=vaultMemory.entries[i];
+ let html="";
+ entry.rows.forEach(r=>{
+  html+=`
+   <div class="entryCard">
+    ${r.label}: ${r.value}
+    <button onclick="copyText('${r.value}')">Copy</button>
+   </div>`;
+ });
+ viewData.innerHTML=html;
+ viewPopup.style.display="block";
+ editIndex=i;
+}
+
+function closeView(){ viewPopup.style.display="none"; }
+
+/* EDIT */
+function editEntry(){
+ let entry=vaultMemory.entries[editIndex];
+ rows.innerHTML="";
+ entry.rows.forEach(r=>addRow(r.label,r.value));
+ viewPopup.style.display="none";
+ addPopup.style.display="block";
+}
+
 /* DELETE */
 async function deleteEntry(i){
+ if(actionLock) return;
+ actionLock=true;
  vaultMemory.entries.splice(i,1);
  await saveVault();
  loadEntries();
+ actionLock=false;
 }
+
+/* COPY */
+function copyText(t){
+ navigator.clipboard.writeText(t);
+ alert("Copied");
+}
+
 </script>
 
 </body>
