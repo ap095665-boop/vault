@@ -36,6 +36,31 @@ animation:luxMove 18s ease infinite;
 50%{background-position:100% 50%}
 100%{background-position:0% 50%}
 }
+
+ /* entry list card style (replaces accordion) */
+
+.entryCard{
+background:#111;
+margin:12px;
+padding:18px;
+border-radius:16px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+font-size:18px;
+box-shadow:0 0 8px #000;
+}
+
+.entryTitle{
+color:#00ff88;
+}
+
+.deleteBtn{
+background:none;
+border:none;
+color:#ff4d4d;
+font-size:22px;
+}
 </style>
 
  <link rel="manifest" href="manifest.json">
@@ -296,12 +321,12 @@ content+=`<div class="section"><b>${data.customTitle}</b><br>
 }
 
 html+=`
-<div class="accHeader">
-  <span onclick="openEntryPopup(${i})">${data.title}</span>
-  <button onclick="deleteEntry(${i})"
-    style="float:right;background:none;border:none;color:red;font-size:18px">
-    ❌
-  </button>
+<div class="entryCard">
+  <div class="entryTitle" onclick="openEntryPopup(${i})">
+    ${data.title}
+  </div>
+
+  <button class="deleteBtn" onclick="deleteEntry(${i})">❌</button>
 </div>
 `;
 
