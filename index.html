@@ -127,15 +127,30 @@ async function saveEntry(){
  loadEntries();
 }
 
-/* LOAD */
 function loadEntries(){
+
  let html="";
+
  vaultMemory.entries.forEach((e,i)=>{
- html+=`<div class="entryCard">
- ${e.title}<br>${e.bank}<br>${e.account}
- <button onclick="deleteEntry(${i})">Delete</button>
- </div>`;
+
+  html+=`
+  <div class="entryCard">
+
+    <div>
+      <div class="entryTitle">${e.title}</div>
+
+      <div>${e.bank?.name || ""}</div>
+      <div>${e.bank?.account || ""}</div>
+
+    </div>
+
+    <button class="deleteBtn" onclick="deleteEntry(${i})">Delete</button>
+
+  </div>
+  `;
+
  });
+
  dataArea.innerHTML=html;
 }
 
