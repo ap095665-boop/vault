@@ -103,7 +103,30 @@ animation:luxMove 18s ease infinite;
 <button onclick="saveData()">SAVE</button>
 <button onclick="closePopup()">CANCEL</button>
 </div>
+<!-- ENTRY VIEW POPUP -->
+<div id="entryPopup" style="
+display:none;
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:#000;
+overflow:auto;
+padding:20px;
+z-index:999;
+">
 
+<button onclick="closeEntryPopup()" style="
+position:fixed;
+top:10px;
+right:10px;
+font-size:18px;
+">❌ Close</button>
+
+<div id="popupContent"></div>
+
+</div>
 <script>
 // ===== PIN SYSTEM =====
 let entered="";
@@ -274,8 +297,7 @@ content+=`<div class="section"><b>${data.customTitle}</b><br>
 
 html+=`
 <div class="accordion">
-<div class="accHeader" onclick="toggleAcc(${i})">${data.title}</div>
-<div class="accContent" id="acc${i}">
+<div class="accHeader" onclick="openEntryPopup(${i})">${data.title}</div><div class="accContent" id="acc${i}">
 ${content}
 </div>
 </div>
@@ -299,7 +321,56 @@ alert("Copied");
 if("serviceWorker" in navigator){
  navigator.serviceWorker.register("sw.js");
 }
- 
+ function openEntryPopup(index){
+
+ let d=localStorage.getItem("vaultData");
+ let arr=JSON.parse(d);
+ let data=arr[index];
+
+ let content="";
+
+ data.bank.forEach(b=>{
+ content+=`<div class="section"><b>BANK</b><br>
+ ${b.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+ });
+
+ data.card.forEach(c=>{
+ content+=`<div class="section"><b>CARD</b><br>
+ ${c.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+ });
+
+ data.upi.forEach(u=>{
+ content+=`<div class="section"><b>UPI</b><br>
+ ${u.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+ });
+
+ data.wallet.forEach(w=>{
+ content+=`<div class="section"><b>WALLET</b><br>
+ ${w.map(v=>`<input value="${v}" readonly>
+ <button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
+ </div>`;
+ });
+
+ if(data.customTitle){
+ content+=`<div class="section"><b>${data.customTitle}</b><br>
+ <input value="${data.customValue}" readonly>
+ <button class="copy" onclick="copy('${data.customValue}')">Copy</button>
+ </div>`;
+ }
+
+ popupContent.innerHTML=content;
+ entryPopup.style.display="block";
+}
+
+ function closeEntryPopup(){
+ entryPopup.style.display="none";
+}
 </script>
 
 </body>
