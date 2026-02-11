@@ -1,13 +1,14 @@
 /* ===========================
    SECURE VAULT STORAGE ENGINE
+   FINAL VERSION
    =========================== */
 
 const systemKey = "vault-system-secret";
 
-let vaultMemory = null;   // decrypted in RAM only
-let vaultKey = null;      // crypto key in session
+let vaultMemory = null;
+let vaultKey = null;
 
-/* ===== KEY DERIVATION ===== */
+/* KEY DERIVATION */
 async function deriveKey(pin, salt) {
  const enc = new TextEncoder();
 
@@ -33,23 +34,20 @@ async function deriveKey(pin, salt) {
  );
 }
 
-/* ===== CREATE NEW VAULT ===== */
+/* CREATE VAULT */
 async function createVault(pin) {
  const salt = crypto.getRandomValues(new Uint8Array(16));
  vaultKey = await deriveKey(pin, salt);
 
- vaultMemory = {
-  entries: []
- };
+ vaultMemory = { entries: [] };
 
  await saveVault();
 
  localStorage.setItem("vaultSalt", JSON.stringify(Array.from(salt)));
 }
 
-/* ===== UNLOCK VAULT ===== */
+/* UNLOCK */
 async function unlockVault(pin) {
-
  const saltStored = localStorage.getItem("vaultSalt");
  const vaultStored = localStorage.getItem("vaultSecure");
 
@@ -60,7 +58,6 @@ async function unlockVault(pin) {
 
  try {
   const vaultObj = JSON.parse(vaultStored);
-
   const iv = new Uint8Array(vaultObj.iv);
   const data = new Uint8Array(vaultObj.data);
 
@@ -74,15 +71,13 @@ async function unlockVault(pin) {
   vaultMemory = JSON.parse(dec.decode(decrypted));
 
   return true;
-
  } catch (e) {
   return false;
  }
 }
 
-/* ===== SAVE VAULT ===== */
+/* SAVE */
 async function saveVault() {
-
  if (!vaultKey || !vaultMemory) return;
 
  const enc = new TextEncoder();
@@ -102,27 +97,24 @@ async function saveVault() {
  localStorage.setItem("vaultSecure", JSON.stringify(payload));
 }
 
-/* ===== RESET VAULT ===== */
+/* RESET */
 function resetVault() {
  localStorage.removeItem("vaultSecure");
  localStorage.removeItem("vaultSalt");
  vaultMemory = null;
  vaultKey = null;
- alert("Vault reset. Create new PIN.");
+ alert("Vault reset.");
  location.reload();
 }
 
-/* ===== LOCK VAULT ===== */
+/* LOCK */
 function lockVault() {
  vaultMemory = null;
  vaultKey = null;
 }
 
-/* ===== AUTO LOCK EVENTS ===== */
+/* AUTO LOCK */
 window.addEventListener("beforeunload", lockVault);
-
 document.addEventListener("visibilitychange", () => {
- if (document.hidden) {
-  lockVault();
- }
+ if (document.hidden) lockVault();
 });
