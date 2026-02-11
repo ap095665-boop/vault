@@ -88,11 +88,13 @@ async function submitPIN(){
  let ok = await unlockVault(entered);
 
  if(ok){
-  lock.style.display="none";
-  vault.style.display="block";
-  addBtn.style.display="block";
-  loadEntries();
- }else{
+ lock.style.display="none";
+ vault.style.display="block";
+ addBtn.style.display="block";
+
+ upgradeSchema();   // NEW
+ loadEntries();
+}else{
   alert("Wrong PIN");
  }
 
@@ -137,6 +139,51 @@ function loadEntries(){
  dataArea.innerHTML=html;
 }
 
+function upgradeSchema(){
+
+ if(!vaultMemory || !vaultMemory.entries) return;
+
+ vaultMemory.entries = vaultMemory.entries.map(entry => {
+
+  // already upgraded → skip
+  if(entry.bank && typeof entry.bank === "object") return entry;
+
+  // convert old entry
+  return {
+   title: entry.title || "",
+
+   bank:{
+    name: entry.bank || "",
+    account: entry.account || "",
+    ifsc: "",
+    branch: ""
+   },
+
+   card:{
+    number:"",
+    expiry:"",
+    cvv:""
+   },
+
+   upi:{
+    id:""
+   },
+
+   wallet:{
+    id:"",
+    pass:""
+   },
+
+   custom:{
+    title:"",
+    value:""
+   }
+  };
+
+ });
+
+}
+ 
 /* DELETE */
 async function deleteEntry(i){
  vaultMemory.entries.splice(i,1);
