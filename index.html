@@ -2,261 +2,103 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Private Vault</title>
-
+<title>Crypto Core Test</title>
 <style>
-body{background:#0b0b0b;font-family:monospace;color:#00ff88;margin:0;text-align:center}
-button{padding:12px;border:none;border-radius:10px;background:#111;color:#00ff88;font-size:18px}
-.keypad{display:grid;grid-template-columns:repeat(3,80px);gap:15px;justify-content:center;margin-top:20px}
-.key{width:80px;height:80px;font-size:22px;border-radius:12px}
-.display{width:240px;height:50px;margin:20px auto;background:#000;border-radius:10px;font-size:26px;display:flex;align-items:center;justify-content:center}
-.section{background:#111;margin:12px;padding:12px;border-radius:12px;text-align:left}
-input{width:95%;padding:10px;margin:6px;background:#000;color:#00ff88;border:none;border-radius:8px}
-.copy{background:#222;margin-top:6px}
-#addBtn{position:fixed;bottom:20px;right:20px;width:60px;height:60px;border-radius:50%;font-size:28px;background:#00ff88;color:#000}
-
-#bgLuxury{
-position:fixed;top:0;left:0;width:100%;height:100%;z-index:-1;
-background:linear-gradient(270deg,#0b0b0b,#001a14,#00332a,#0b0b0b);
-background-size:800% 800%;
-animation:luxMove 18s ease infinite;
-}
-@keyframes luxMove{
-0%{background-position:0% 50%}
-50%{background-position:100% 50%}
-100%{background-position:0% 50%}
-}
-
-.entryCard{
-background:#111;margin:12px;padding:18px;border-radius:16px;
-display:flex;justify-content:space-between;align-items:center;font-size:18px;
-box-shadow:0 0 8px #000;
-}
-.entryTitle{color:#00ff88}
-.deleteBtn{background:none;border:none;color:#ff4d4d;font-size:22px}
+body{background:#000;color:#00ff88;font-family:monospace;text-align:center;padding:20px}
+input,textarea{width:90%;padding:12px;margin:10px;background:#fff;color:#000;border:none;border-radius:8px}
+button{padding:12px;background:#111;color:#00ff88;border:none;border-radius:10px}
 </style>
-
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0b0b0b">
 </head>
-
 <body>
-<div id="bgLuxury"></div>
 
-<!-- LOCK -->
-<div id="lock">
-<h2 id="lockTitle">Create 4 Digit PIN</h2>
-<div class="display" id="display"></div>
+<h2>Crypto Core Test</h2>
 
-<div class="keypad">
-<button class="key" onclick="press(1)">1</button>
-<button class="key" onclick="press(2)">2</button>
-<button class="key" onclick="press(3)">3</button>
-<button class="key" onclick="press(4)">4</button>
-<button class="key" onclick="press(5)">5</button>
-<button class="key" onclick="press(6)">6</button>
-<button class="key" onclick="press(7)">7</button>
-<button class="key" onclick="press(8)">8</button>
-<button class="key" onclick="press(9)">9</button>
-<button class="key" onclick="clearCode()">C</button>
-<button class="key" onclick="press(0)">0</button>
-<button class="key" onclick="submitPIN()">OK</button>
-</div>
-</div>
+<input id="pin" placeholder="Enter PIN">
+<textarea id="data" placeholder="Text to encrypt"></textarea>
 
-<!-- VAULT -->
-<div id="vault" style="display:none;padding:15px">
-<h2>PRIVATE VAULT</h2>
-<div id="dataArea"></div>
-</div>
+<button onclick="encryptData()">Encrypt</button>
+<button onclick="decryptData()">Decrypt</button>
 
-<button id="searchBtn" onclick="openSearch()" style="display:none;position:fixed;bottom:90px;right:20px;width:55px;height:55px;border-radius:50%;font-size:20px;background:#222;color:#00ff88;">🔍</button>
-<button id="addBtn" onclick="openPopup()" style="display:none">+</button>
-
-<!-- SEARCH POPUP -->
-<div id="searchPopup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;z-index:999;padding:20px;overflow:auto;">
-<button onclick="closeSearch()" style="position:fixed;top:10px;right:10px;font-size:18px;">❌</button>
-<h3>Search Vault</h3>
-<input id="searchInput" placeholder="Type to search..." style="width:100%;padding:12px;margin:10px 0;font-size:18px;">
-<div id="searchResults"></div>
-</div>
-
-<!-- ADD POPUP -->
-<div id="popup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;overflow:auto;padding:20px">
-<h3>Add Data</h3>
-<h4>Entry Title</h4>
-<input id="entryTitle">
-
-<h4>🏦 Bank</h4>
-<div id="bankFields"></div>
-<button onclick="addBank()">+ Add Bank</button>
-
-<h4>💳 Cards</h4>
-<div id="cardFields"></div>
-<button onclick="addCard()">+ Add Card</button>
-
-<h4>📱 UPI</h4>
-<div id="upiFields"></div>
-<button onclick="addUpi()">+ Add UPI</button>
-
-<h4>👛 Wallet</h4>
-<div id="walletFields"></div>
-<button onclick="addWallet()">+ Add Wallet</button>
-
-<h4>🧩 Custom</h4>
-<input id="customTitle">
-<input id="customValue">
-
-<br><br>
-<button onclick="saveData()">SAVE</button>
-<button onclick="closePopup()">CANCEL</button>
-</div>
-
-<!-- VIEW ENTRY -->
-<div id="entryPopup" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#000;overflow:auto;padding:20px;z-index:999;">
-<button onclick="closeEntryPopup()" style="position:fixed;top:10px;right:10px;font-size:18px;">❌ Close</button>
-<div id="popupContent"></div>
-</div>
+<textarea id="result" placeholder="Output"></textarea>
 
 <script>
-let entered="";
 
-// PIN
-function press(n){entered+=n;display.innerText="•".repeat(entered.length);}
-function clearCode(){entered="";display.innerText="";}
-function submitPIN(){
- let saved=localStorage.getItem("vaultPIN");
- if(!saved){
-  if(entered.length!==4){alert("Enter 4 digit PIN");return;}
-  localStorage.setItem("vaultPIN",entered);
-  alert("PIN saved permanently");
-  entered="";display.innerText="";lockTitle.innerText="Enter PIN";return;
- }
- if(entered===saved){
-  lock.style.display="none";vault.style.display="block";addBtn.style.display="block";searchBtn.style.display="block";loadData();
- }else alert("Wrong PIN");
- clearCode();
-}
-if(localStorage.getItem("vaultPIN")) lockTitle.innerText="Enter PIN";
+const systemKey="vault-system-secret";
 
-// popup
-function openPopup(){popup.style.display="block";}
-function closePopup(){popup.style.display="none";}
+async function getKey(pin,salt){
 
-// add fields
-function addBank(){bankFields.innerHTML+=`<div class="section"><input placeholder="Account"><input placeholder="IFSC"><input placeholder="Bank"><input placeholder="Branch"></div>`;}
-function addCard(){cardFields.innerHTML+=`<div class="section"><input placeholder="Card"><input placeholder="Name"><input placeholder="Expiry"><input placeholder="CVV"><input placeholder="PIN"></div>`;}
-function addUpi(){upiFields.innerHTML+=`<div class="section"><input placeholder="UPI"><input placeholder="Name"></div>`;}
-function addWallet(){walletFields.innerHTML+=`<div class="section"><input placeholder="Wallet"><input placeholder="ID"><input placeholder="Password"></div>`;}
+ let enc=new TextEncoder();
 
-// save
-function saveData(){
- let entry={title:entryTitle.value||"Untitled",bank:[],card:[],upi:[],wallet:[],customTitle:customTitle.value,customValue:customValue.value};
- bankFields.querySelectorAll(".section").forEach(sec=>entry.bank.push([...sec.querySelectorAll("input")].map(i=>i.value)));
- cardFields.querySelectorAll(".section").forEach(sec=>entry.card.push([...sec.querySelectorAll("input")].map(i=>i.value)));
- upiFields.querySelectorAll(".section").forEach(sec=>entry.upi.push([...sec.querySelectorAll("input")].map(i=>i.value)));
- walletFields.querySelectorAll(".section").forEach(sec=>entry.wallet.push([...sec.querySelectorAll("input")].map(i=>i.value)));
- let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");arr.push(entry);
- localStorage.setItem("vaultData",JSON.stringify(arr));
- closePopup();bankFields.innerHTML="";cardFields.innerHTML="";upiFields.innerHTML="";walletFields.innerHTML="";
- customTitle.value="";customValue.value="";entryTitle.value="";loadData();
+ let baseKey=await crypto.subtle.importKey(
+  "raw",
+  enc.encode(pin+systemKey),
+  "PBKDF2",
+  false,
+  ["deriveKey"]
+ );
+
+ return crypto.subtle.deriveKey(
+  {
+   name:"PBKDF2",
+   salt:salt,
+   iterations:100000,
+   hash:"SHA-256"
+  },
+  baseKey,
+  {name:"AES-GCM",length:256},
+  false,
+  ["encrypt","decrypt"]
+ );
 }
 
-// load
-function loadData(){
- let arr=JSON.parse(localStorage.getItem("vaultData")||"[]");let html="";
- arr.forEach((data,i)=>{
-  html+=`<div class="entryCard"><div class="entryTitle" onclick="openEntryPopup(${i})">${data.title}</div>
-  <button class="deleteBtn" onclick="deleteEntry(${i})">❌</button></div>`;
- });
- dataArea.innerHTML=html;
+async function encryptData(){
+
+ let pin=document.getElementById("pin").value;
+ let text=document.getElementById("data").value;
+
+ let enc=new TextEncoder();
+
+ let salt=crypto.getRandomValues(new Uint8Array(16));
+ let iv=crypto.getRandomValues(new Uint8Array(12));
+
+ let key=await getKey(pin,salt);
+
+ let encrypted=await crypto.subtle.encrypt(
+  {name:"AES-GCM",iv:iv},
+  key,
+  enc.encode(text)
+ );
+
+ let result={
+  salt:Array.from(salt),
+  iv:Array.from(iv),
+  data:Array.from(new Uint8Array(encrypted))
+ };
+
+ document.getElementById("result").value=JSON.stringify(result);
 }
 
-// view entry
-function openEntryPopup(index){
- let data=JSON.parse(localStorage.getItem("vaultData"))[index];let content="";
- ["bank","card","upi","wallet"].forEach(type=>{
-  data[type].forEach(group=>{
-   content+=`<div class="section"><b>${type.toUpperCase()}</b><br>
-   ${group.map(v=>`<input value="${v}" readonly><button class="copy" onclick="copy('${v}')">Copy</button>`).join("<br>")}
-   </div>`;
-  });
- });
- if(data.customTitle) content+=`<div class="section"><b>${data.customTitle}</b><br><input value="${data.customValue}" readonly>
- <button class="copy" onclick="copy('${data.customValue}')">Copy</button></div>`;
- popupContent.innerHTML=content;entryPopup.style.display="block";
-}
-function closeEntryPopup(){entryPopup.style.display="none";}
+async function decryptData(){
 
-// delete
-function deleteEntry(i){
- if(!confirm("Delete this entry?"))return;
- let arr=JSON.parse(localStorage.getItem("vaultData"));arr.splice(i,1);
- localStorage.setItem("vaultData",JSON.stringify(arr));loadData();
+ let pin=document.getElementById("pin").value;
+ let obj=JSON.parse(document.getElementById("result").value);
+
+ let salt=new Uint8Array(obj.salt);
+ let iv=new Uint8Array(obj.iv);
+ let data=new Uint8Array(obj.data);
+
+ let key=await getKey(pin,salt);
+
+ let decrypted=await crypto.subtle.decrypt(
+  {name:"AES-GCM",iv:iv},
+  key,
+  data
+ );
+
+ let dec=new TextDecoder();
+ document.getElementById("data").value=dec.decode(decrypted);
 }
 
-// copy
-function copy(t){navigator.clipboard.writeText(t);alert("Copied");}
-
-// SEARCH
-function openSearch(){
- searchPopup.style.display="block";
- searchInput.value="";
- searchResults.innerHTML="";
- 
-}
-function closeSearch(){searchPopup.style.display="none";}
-
-function initSearch(){
-input.addEventListener("input",function(){
-
- let query=this.value.toLowerCase().trim();
- if(query===""){
-  document.getElementById("searchResults").innerHTML="";
-  return;
- }
-
- let d=localStorage.getItem("vaultData");
- if(!d) return;
-
- let arr=JSON.parse(d);
- let html="";
-
- arr.forEach((data,i)=>{
-
-  // search in title
-  let titleMatch = data.title.toLowerCase().includes(query);
-
-  // search inside fields
-  let deepMatch=false;
-
-  let all = [
-   ...data.bank.flat(),
-   ...data.card.flat(),
-   ...data.upi.flat(),
-   ...data.wallet.flat(),
-   data.customTitle || "",
-   data.customValue || ""
-  ];
-
-  deepMatch = all.some(v => v.toLowerCase().includes(query));
-
-  if(titleMatch || deepMatch){
-   html+=`
-   <div class="entryCard" style="margin-top:12px;">
-     <div onclick="openEntryPopup(${i})">${data.title}</div>
-   </div>
-   `;
-  }
-
- });
-
- document.getElementById("searchResults").innerHTML=html;
-
-});
-
-// service worker
-if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js");
 </script>
 
 </body>
