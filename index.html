@@ -87,8 +87,8 @@ button{
 
 <div id="dataArea"></div>
 
-<button onclick="openSearch()" style="position:fixed;bottom:90px;right:20px;">🔍</button>
-<button onclick="openAdd()" style="position:fixed;bottom:20px;right:20px;">+ Add Entry</button>
+<button id="searchBtn" onclick="openSearch()" style="display:none;position:fixed;bottom:90px;right:20px;">🔍</button>
+<button id="addBtn" onclick="openAdd()" style="display:none;position:fixed;bottom:20px;right:20px;">+ Add Entry</button>
 
 <!-- SEARCH -->
 <div id="searchPopup" class="popup">
@@ -122,30 +122,57 @@ button{
 let actionLock=false;
 let editIndex=null;
 
-/* AUTO PIN LOGIN */
+/* PIN REGISTRATION + LOGIN */
+
+let creatingPin=false;
+let firstPin="";
+
 document.getElementById("pinInput").addEventListener("input", async function(){
 
  const pin=this.value;
+
  if(pin.length<4) return;
 
  let salt=localStorage.getItem("vaultSalt");
 
+ // FIRST TIME USER
  if(!salt){
-  await createVault(pin);
-  loginPopup.style.display="none";
-  loadEntries();
-  return;
+
+   if(!creatingPin){
+     firstPin=pin;
+     creatingPin=true;
+     this.value="";
+     alert("Confirm PIN");
+     return;
+   }
+
+   if(pin===firstPin){
+     await createVault(pin);
+     loginPopup.style.display="none";
+     searchBtn.style.display="block";
+     addBtn.style.display="block";
+     loadEntries();
+   }else{
+     alert("PIN mismatch");
+   }
+
+   return;
  }
 
+ // EXISTING USER LOGIN
  let ok=await unlockVault(pin);
 
  if(ok){
   loginPopup.style.display="none";
+  searchBtn.style.display="block";
+  addBtn.style.display="block";
   loadEntries();
  }
+
 });
 
 /* LOAD ENTRIES */
+
 function loadEntries(){
 
  let html="";
@@ -168,6 +195,7 @@ function loadEntries(){
 }
 
 /* ADD ENTRY */
+
 function openAdd(){
  editIndex=null;
  rows.innerHTML="";
@@ -196,6 +224,7 @@ function deleteRow(btn){ btn.parentElement.remove(); }
 function closeAdd(){ addPopup.style.display="none"; }
 
 /* SAVE */
+
 async function saveEntry(){
 
  if(actionLock) return;
@@ -221,6 +250,7 @@ async function saveEntry(){
 }
 
 /* VIEW */
+
 function viewEntry(i){
  let entry=vaultMemory.entries[i];
  let html="";
@@ -239,6 +269,7 @@ function viewEntry(i){
 function closeView(){ viewPopup.style.display="none"; }
 
 /* EDIT */
+
 function editEntry(){
  let entry=vaultMemory.entries[editIndex];
  rows.innerHTML="";
@@ -248,6 +279,7 @@ function editEntry(){
 }
 
 /* DELETE */
+
 async function deleteEntry(i){
 
  if(actionLock) return;
@@ -263,12 +295,14 @@ async function deleteEntry(i){
 }
 
 /* COPY */
+
 function copyText(t){
  navigator.clipboard.writeText(t);
  alert("Copied");
 }
 
 /* SEARCH */
+
 function openSearch(){
  searchPopup.style.display="block";
  searchInput.value="";
@@ -296,9 +330,11 @@ document.getElementById("searchInput").addEventListener("input",function(){
 });
 
 /* PWA */
+
 if ("serviceWorker" in navigator) {
  navigator.serviceWorker.register("sw.js");
 }
+
 </script>
 
 </body>
