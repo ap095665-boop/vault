@@ -3,7 +3,8 @@
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
-
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#000000">
 <style>
 body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
 
@@ -105,7 +106,9 @@ button{
 <button onclick="editEntry()">Edit</button>
 <button onclick="closeView()">Close</button>
 </div>
-
+<button id="installBtn" style="display:none;position:fixed;bottom:20px;left:20px;">
+Install App
+</button>
 <script src="crypto-engine.js"></script>
 
 <script>
@@ -292,6 +295,26 @@ function copyText(t){
  alert("Copied");
 }
 
+ 
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js");
+}
+
+ let deferredPrompt;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = "block";
+});
+
+installBtn.addEventListener("click", () => {
+  installBtn.style.display = "none";
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(choice => {
+    deferredPrompt = null;
+  });
+});
 </script>
 
 </body>
