@@ -75,6 +75,45 @@ button{
  display:none;
  overflow:auto;
 }
+  /* CARD MICRO-ANIMATION */
+
+.entryCard{
+ transition: transform 0.18s ease,
+             box-shadow 0.18s ease,
+             background 0.18s ease;
+ will-change: transform;
+}
+
+/* hover for desktop */
+.entryCard:hover{
+ transform: translateY(-4px) scale(1.01);
+ box-shadow: 0 10px 25px rgba(0,255,136,0.15);
+}
+
+/* tap effect mobile */
+.entryCard:active{
+ transform: scale(0.97);
+ box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+
+/* smooth open button feedback */
+.openBtn{
+ transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.openBtn:active{
+ transform: scale(.94);
+ box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+}
+
+/* delete button micro pulse */
+.deleteEdge{
+ transition: transform .15s ease;
+}
+
+.deleteEdge:active{
+ transform: scale(1.25);
+}
 </style>
 </head>
 
