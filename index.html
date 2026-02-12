@@ -5,6 +5,7 @@
 <title>Secure Vault</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#000000">
+
 <style>
 body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
 
@@ -19,10 +20,7 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  color:#000;
 }
 
-.entryTitle{
- flex:1;
- font-size:18px;
-}
+.entryTitle{flex:1;font-size:18px}
 
 .openBtn{
  margin-right:60px;
@@ -83,14 +81,24 @@ button{
 <div id="loginPopup" class="popup" style="display:block">
 <h3>Enter PIN</h3>
 <input id="pinInput" type="password">
-<button id="unlockBtn">Unlock</button>
 </div>
 
 <h2>Secure Vault</h2>
-<div id="dataArea"></div>
-<button onclick="openAdd()">+ Add Entry</button>
 
-<!-- ADD / EDIT -->
+<div id="dataArea"></div>
+
+<button onclick="openSearch()" style="position:fixed;bottom:90px;right:20px;">🔍</button>
+<button onclick="openAdd()" style="position:fixed;bottom:20px;right:20px;">+ Add Entry</button>
+
+<!-- SEARCH -->
+<div id="searchPopup" class="popup">
+<h3>Search by Title</h3>
+<input id="searchInput" placeholder="Type title...">
+<div id="searchResults"></div>
+<button onclick="closeSearch()">Close</button>
+</div>
+
+<!-- ADD -->
 <div id="addPopup" class="popup">
 <h3>Add Entry</h3>
 <div id="rows"></div>
@@ -99,16 +107,14 @@ button{
 <button onclick="closeAdd()">Cancel</button>
 </div>
 
-<!-- VIEW POPUP -->
+<!-- VIEW -->
 <div id="viewPopup" class="popup">
 <h3>Entry</h3>
 <div id="viewData"></div>
 <button onclick="editEntry()">Edit</button>
 <button onclick="closeView()">Close</button>
 </div>
-<button id="installBtn" style="display:none;position:fixed;bottom:20px;left:20px;">
-Install App
-</button>
+
 <script src="crypto-engine.js"></script>
 
 <script>
@@ -116,18 +122,11 @@ Install App
 let actionLock=false;
 let editIndex=null;
 
-/* ---------- LOGIN ---------- */
+/* AUTO PIN LOGIN */
+document.getElementById("pinInput").addEventListener("input", async function(){
 
-document.getElementById("unlockBtn").addEventListener("click", login);
-
-async function login(){
-
- const pin=document.getElementById("pinInput").value;
-
- if(!pin){
-  alert("Enter PIN");
-  return;
- }
+ const pin=this.value;
+ if(pin.length<4) return;
 
  let salt=localStorage.getItem("vaultSalt");
 
@@ -143,13 +142,10 @@ async function login(){
  if(ok){
   loginPopup.style.display="none";
   loadEntries();
- }else{
-  alert("Wrong PIN");
  }
-}
+});
 
-/* ---------- LOAD ENTRIES ---------- */
-
+/* LOAD ENTRIES */
 function loadEntries(){
 
  let html="";
@@ -171,8 +167,7 @@ function loadEntries(){
  dataArea.innerHTML=html;
 }
 
-/* ---------- ADD ENTRY ---------- */
-
+/* ADD ENTRY */
 function openAdd(){
  editIndex=null;
  rows.innerHTML="";
@@ -188,28 +183,19 @@ function createDefaultRows(){
 }
 
 function addRow(label="Extra", value=""){
-
  let row=document.createElement("div");
-
  row.innerHTML=`
   <input placeholder="Label" value="${label}">
   <input placeholder="Value" value="${value}">
   <button onclick="deleteRow(this)">❌</button>
  `;
-
  rows.appendChild(row);
 }
 
-function deleteRow(btn){
- btn.parentElement.remove();
-}
+function deleteRow(btn){ btn.parentElement.remove(); }
+function closeAdd(){ addPopup.style.display="none"; }
 
-function closeAdd(){
- addPopup.style.display="none";
-}
-
-/* ---------- SAVE ENTRY ---------- */
-
+/* SAVE */
 async function saveEntry(){
 
  if(actionLock) return;
@@ -229,20 +215,15 @@ async function saveEntry(){
  }
 
  await saveVault();
-
  closeAdd();
  loadEntries();
-
  actionLock=false;
 }
 
-/* ---------- VIEW ---------- */
-
+/* VIEW */
 function viewEntry(i){
-
  let entry=vaultMemory.entries[i];
  let html="";
-
  entry.rows.forEach(r=>{
   html+=`
    <div class="entryCard">
@@ -250,18 +231,14 @@ function viewEntry(i){
     <button onclick="copyText('${r.value}')">Copy</button>
    </div>`;
  });
-
  viewData.innerHTML=html;
  viewPopup.style.display="block";
  editIndex=i;
 }
 
-function closeView(){
- viewPopup.style.display="none";
-}
+function closeView(){ viewPopup.style.display="none"; }
 
-/* ---------- EDIT ---------- */
-
+/* EDIT */
 function editEntry(){
  let entry=vaultMemory.entries[editIndex];
  rows.innerHTML="";
@@ -270,8 +247,7 @@ function editEntry(){
  addPopup.style.display="block";
 }
 
-/* ---------- DELETE ---------- */
-
+/* DELETE */
 async function deleteEntry(i){
 
  if(actionLock) return;
@@ -280,41 +256,49 @@ async function deleteEntry(i){
  if(!confirmDelete) return;
 
  actionLock=true;
-
  vaultMemory.entries.splice(i,1);
  await saveVault();
  loadEntries();
-
  actionLock=false;
 }
 
-/* ---------- COPY ---------- */
-
+/* COPY */
 function copyText(t){
  navigator.clipboard.writeText(t);
  alert("Copied");
 }
 
- 
-if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js");
+/* SEARCH */
+function openSearch(){
+ searchPopup.style.display="block";
+ searchInput.value="";
+ searchResults.innerHTML="";
 }
 
- let deferredPrompt;
+function closeSearch(){ searchPopup.style.display="none"; }
 
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = "block";
+document.getElementById("searchInput").addEventListener("input",function(){
+
+ let q=this.value.toLowerCase();
+ let html="";
+
+ vaultMemory.entries.forEach((e,i)=>{
+  let title=e.rows[0]?.value?.toLowerCase() || "";
+  if(title.includes(q)){
+   html+=`
+   <div class="entryCard" onclick="viewEntry(${i})">
+     ${e.rows[0]?.value}
+   </div>`;
+  }
+ });
+
+ searchResults.innerHTML=html;
 });
 
-installBtn.addEventListener("click", () => {
-  installBtn.style.display = "none";
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(choice => {
-    deferredPrompt = null;
-  });
-});
+/* PWA */
+if ("serviceWorker" in navigator) {
+ navigator.serviceWorker.register("sw.js");
+}
 </script>
 
 </body>
