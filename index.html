@@ -149,7 +149,31 @@ button{
  to{ left:100%; }
 }
 
- 
+ /* OPEN button premium glow */
+
+.openBtn{
+ position:relative;
+ overflow:hidden;
+}
+
+.openBtn::after{
+ content:"";
+ position:absolute;
+ inset:0;
+ border-radius:10px;
+ box-shadow:0 0 0px rgba(0,255,136,0);
+ transition:box-shadow .3s;
+}
+
+.openBtn.pulse::after{
+ animation:pulseGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes pulseGlow{
+ 0%{ box-shadow:0 0 0px rgba(0,255,136,0); }
+ 50%{ box-shadow:0 0 18px rgba(0,255,136,0.6); }
+ 100%{ box-shadow:0 0 0px rgba(0,255,136,0); }
+}
 </style>
 </head>
 
@@ -269,6 +293,7 @@ function loadEntries(){
 
  dataArea.innerHTML=html;
 startScanAnimation();
+startOpenPulse();
 }
 
 /* SEARCH */
@@ -410,7 +435,11 @@ function copyText(t){
  alert("Copied");
 }
 function startScanAnimation(){
-
+function startOpenPulse(){
+ document.querySelectorAll(".openBtn").forEach(btn=>{
+   btn.classList.add("pulse");
+ });
+}
  const cards=document.querySelectorAll(".entryCard");
 
  cards.forEach((card,index)=>{
