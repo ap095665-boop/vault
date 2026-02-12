@@ -291,7 +291,31 @@ async function deleteEntry(i){
 }
 
 function copyText(t){ navigator.clipboard.writeText(t); alert("Copied");}
+/* SEARCH FIX — ONLY ADDING THIS */
 
+document.getElementById("searchInput").addEventListener("input", function(){
+
+ const query = this.value.toLowerCase();
+
+ const cards = document.querySelectorAll(".entryCard");
+
+ cards.forEach(card => {
+
+   const titleElement = card.querySelector(".entryTitle");
+
+   if(!titleElement) return;
+
+   const titleText = titleElement.innerText.toLowerCase();
+
+   if(titleText.includes(query)){
+     card.style.display = "flex";
+   }else{
+     card.style.display = "none";
+   }
+
+ });
+
+});
 </script>
 
 </body>
