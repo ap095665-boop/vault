@@ -6,10 +6,7 @@
 
 <style>
 body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
-.entryCard{background:#fff;color:#000;margin:12px;padding:14px;border-radius:12px}
-input{width:90%;padding:12px;margin:6px;background:#fff;color:#000;border:none;border-radius:8px}
-button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;color:#00ff88}
-.popup{position:fixed;top:0;left:0;right:0;bottom:0;background:#000;padding:20px;display:none;overflow:auto}
+
 .entryCard{
  background:#fff;
  margin:12px;
@@ -18,11 +15,11 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
  display:flex;
  align-items:center;
  position:relative;
+ color:#000;
 }
 
 .entryTitle{
  flex:1;
- color:#000;
  font-size:18px;
 }
 
@@ -32,6 +29,7 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
  color:#00ff88;
  padding:10px 16px;
  border-radius:10px;
+ border:none;
 }
 
 .deleteEdge{
@@ -44,6 +42,37 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
  font-size:22px;
  color:#ff4d4d;
 }
+
+input{
+ width:90%;
+ padding:12px;
+ margin:6px;
+ background:#fff;
+ color:#000;
+ border:none;
+ border-radius:8px;
+}
+
+button{
+ padding:10px;
+ margin:6px;
+ border:none;
+ border-radius:10px;
+ background:#111;
+ color:#00ff88;
+}
+
+.popup{
+ position:fixed;
+ top:0;
+ left:0;
+ right:0;
+ bottom:0;
+ background:#000;
+ padding:20px;
+ display:none;
+ overflow:auto;
+}
 </style>
 </head>
 
@@ -53,7 +82,7 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
 <div id="loginPopup" class="popup" style="display:block">
 <h3>Enter PIN</h3>
 <input id="pinInput" type="password">
-<button onclick="login()">Unlock</button>
+<button id="unlockBtn">Unlock</button>
 </div>
 
 <h2>Secure Vault</h2>
@@ -62,7 +91,7 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
 
 <!-- ADD / EDIT -->
 <div id="addPopup" class="popup">
-<h3 id="formTitle">Add Entry</h3>
+<h3>Add Entry</h3>
 <div id="rows"></div>
 <button onclick="addRow()">+ Add Row</button>
 <button onclick="saveEntry()">Save</button>
@@ -84,11 +113,21 @@ button{padding:10px;margin:6px;border:none;border-radius:10px;background:#111;co
 let actionLock=false;
 let editIndex=null;
 
-/* LOGIN */
+/* ---------- LOGIN ---------- */
+
+document.getElementById("unlockBtn").addEventListener("click", login);
+
 async function login(){
- const pin=pinInput.value;
+
+ const pin=document.getElementById("pinInput").value;
+
+ if(!pin){
+  alert("Enter PIN");
+  return;
+ }
 
  let salt=localStorage.getItem("vaultSalt");
+
  if(!salt){
   await createVault(pin);
   loginPopup.style.display="none";
@@ -97,13 +136,17 @@ async function login(){
  }
 
  let ok=await unlockVault(pin);
+
  if(ok){
   loginPopup.style.display="none";
   loadEntries();
- }else alert("Wrong PIN");
+ }else{
+  alert("Wrong PIN");
+ }
 }
 
-/* LOAD */
+/* ---------- LOAD ENTRIES ---------- */
+
 function loadEntries(){
 
  let html="";
@@ -114,13 +157,9 @@ function loadEntries(){
 
   html+=`
   <div class="entryCard">
-
     <div class="entryTitle">${title}</div>
-
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
-
     <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>
-
   </div>
   `;
 
@@ -129,7 +168,8 @@ function loadEntries(){
  dataArea.innerHTML=html;
 }
 
-/* ADD ENTRY */
+/* ---------- ADD ENTRY ---------- */
+
 function openAdd(){
  editIndex=null;
  rows.innerHTML="";
@@ -156,16 +196,24 @@ function addRow(label="Extra", value=""){
 
  rows.appendChild(row);
 }
- 
 
-function closeAdd(){ addPopup.style.display="none"; }
+function deleteRow(btn){
+ btn.parentElement.remove();
+}
 
-/* SAVE */
+function closeAdd(){
+ addPopup.style.display="none";
+}
+
+/* ---------- SAVE ENTRY ---------- */
+
 async function saveEntry(){
+
  if(actionLock) return;
  actionLock=true;
 
  let entry={rows:[]};
+
  rows.querySelectorAll("div").forEach(r=>{
   let inputs=r.querySelectorAll("input");
   entry.rows.push({label:inputs[0].value,value:inputs[1].value});
@@ -178,19 +226,20 @@ async function saveEntry(){
  }
 
  await saveVault();
+
  closeAdd();
  loadEntries();
+
  actionLock=false;
 }
- function deleteRow(btn){
- btn.parentElement.remove();
-}
- 
 
-/* VIEW */
+/* ---------- VIEW ---------- */
+
 function viewEntry(i){
+
  let entry=vaultMemory.entries[i];
  let html="";
+
  entry.rows.forEach(r=>{
   html+=`
    <div class="entryCard">
@@ -198,14 +247,18 @@ function viewEntry(i){
     <button onclick="copyText('${r.value}')">Copy</button>
    </div>`;
  });
+
  viewData.innerHTML=html;
  viewPopup.style.display="block";
  editIndex=i;
 }
 
-function closeView(){ viewPopup.style.display="none"; }
+function closeView(){
+ viewPopup.style.display="none";
+}
 
-/* EDIT */
+/* ---------- EDIT ---------- */
+
 function editEntry(){
  let entry=vaultMemory.entries[editIndex];
  rows.innerHTML="";
@@ -214,27 +267,26 @@ function editEntry(){
  addPopup.style.display="block";
 }
 
-/* DELETE */
+/* ---------- DELETE ---------- */
+
 async function deleteEntry(i){
 
  if(actionLock) return;
 
- let confirmDelete = confirm("Delete this entry permanently?");
+ let confirmDelete=confirm("Delete this entry permanently?");
  if(!confirmDelete) return;
 
- actionLock = true;
+ actionLock=true;
 
  vaultMemory.entries.splice(i,1);
-
  await saveVault();
-
  loadEntries();
 
- actionLock = false;
+ actionLock=false;
 }
-if(!confirmDelete) return;
-navigator.vibrate(40);
-/* COPY */
+
+/* ---------- COPY ---------- */
+
 function copyText(t){
  navigator.clipboard.writeText(t);
  alert("Copied");
