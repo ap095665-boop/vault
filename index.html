@@ -1,14 +1,12 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-
-<style>
+<meta name="theme-color" content="#000000"><style>
 body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
 
+/* cards */
 .entryCard{
  background:#fff;
  margin:12px;
@@ -42,6 +40,7 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  color:#ff4d4d;
 }
 
+/* inputs */
 input{
  width:90%;
  padding:12px;
@@ -52,6 +51,7 @@ input{
  border-radius:8px;
 }
 
+/* buttons */
 button{
  padding:10px;
  margin:6px;
@@ -61,6 +61,7 @@ button{
  color:#00ff88;
 }
 
+/* popup */
 .popup{
  position:fixed;
  top:0;
@@ -72,71 +73,39 @@ button{
  display:none;
  overflow:auto;
 }
-</style>
-</head>
-
-<body>
-
-<!-- LOGIN -->
-<div id="loginPopup" class="popup" style="display:block">
+</style></head><body><!-- LOGIN --><div id="loginPopup" class="popup" style="display:block">
 <h3>Enter PIN</h3>
 <input id="pinInput" type="password">
-</div>
-
-<h2>Secure Vault</h2>
-
+</div><h2>Secure Vault</h2><input id="searchInput" placeholder="Search title..." style="display:none">
 <div id="dataArea"></div>
-
-<button id="searchBtn" onclick="openSearch()" style="display:none;position:fixed;bottom:90px;right:20px;">🔍</button>
-
-<button id="addBtn" onclick="openAdd()" style="display:none;position:fixed;bottom:20px;right:20px;">+ Add Entry</button><!-- SEARCH -->
-<div id="searchPopup" class="popup">
-<h3>Search by Title</h3>
-<input id="searchInput" placeholder="Type title...">
-<div id="searchResults"></div>
-<button onclick="closeSearch()">Close</button>
-</div>
-
-<!-- ADD -->
-<div id="addPopup" class="popup">
+<button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button><!-- ADD / EDIT --><div id="addPopup" class="popup">
 <h3>Add Entry</h3>
 <div id="rows"></div>
 <button onclick="addRow()">+ Add Row</button>
 <button onclick="saveEntry()">Save</button>
 <button onclick="closeAdd()">Cancel</button>
-</div>
-
-<!-- VIEW -->
-<div id="viewPopup" class="popup">
+</div><!-- VIEW --><div id="viewPopup" class="popup">
 <h3>Entry</h3>
 <div id="viewData"></div>
 <button onclick="editEntry()">Edit</button>
 <button onclick="closeView()">Close</button>
-</div>
+</div><script src="crypto-engine.js"></script><script>
 
-<script src="crypto-engine.js"></script>
-
-<script>
-
-/* ---------- PIN AUTO LOGIN SYSTEM ---------- */
-
+let actionLock=false;
+let editIndex=null;
 let creatingPin=false;
-let firstPin="";
+let firstPin=null;
 
-/* hide buttons until unlock */
-searchBtn.style.display="none";
-addBtn.style.display="none";
+/* ---------- AUTO PIN LOGIN ---------- */
 
-/* auto login while typing PIN */
 document.getElementById("pinInput").addEventListener("input", async function(){
 
  const pin=this.value;
-
  if(pin.length<4) return;
 
  let salt=localStorage.getItem("vaultSalt");
 
- /* -------- FIRST TIME USER -------- */
+ /* NEW USER */
  if(!salt){
 
   if(!creatingPin){
@@ -149,57 +118,71 @@ document.getElementById("pinInput").addEventListener("input", async function(){
 
   if(pin===firstPin){
    await createVault(pin);
-   loginPopup.style.display="none";
-   searchBtn.style.display="block";
-   addBtn.style.display="block";
-   loadEntries();
+   afterLogin();
   }else{
    alert("PIN mismatch");
-   this.value="";
   }
 
   return;
  }
 
- /* -------- EXISTING USER LOGIN -------- */
-
+ /* EXISTING USER */
  let ok=await unlockVault(pin);
-
- if(ok){
-  loginPopup.style.display="none";
-  searchBtn.style.display="block";
-  addBtn.style.display="block";
-  loadEntries();
- }else{
-  this.value="";
- }
+ if(ok) afterLogin();
 
 });
 
-/* LOAD ENTRIES */
+/* ---------- AFTER LOGIN ---------- */
+
+function afterLogin(){
+ loginPopup.style.display="none";
+ addBtn.style.display="block";
+ searchInput.style.display="block";
+ loadEntries();
+}
+
+/* ---------- LOAD ENTRIES ---------- */
 
 function loadEntries(){
+
+ if(!vaultMemory || !vaultMemory.entries){
+  dataArea.innerHTML="";
+  return;
+ }
 
  let html="";
 
  vaultMemory.entries.forEach((e,i)=>{
 
-  let title=e.rows[0]?.value || "Untitled";
+  let title=e.rows?.[0]?.value || "Untitled";
 
   html+=`
   <div class="entryCard">
     <div class="entryTitle">${title}</div>
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
     <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>
-  </div>
-  `;
-
+  </div>`;
  });
 
  dataArea.innerHTML=html;
 }
 
-/* ADD ENTRY */
+/* ---------- SEARCH ---------- */
+
+document.getElementById("searchInput").addEventListener("input",function(){
+
+ let q=this.value.toLowerCase();
+
+ let cards=document.querySelectorAll(".entryCard");
+
+ cards.forEach(card=>{
+  let t=card.innerText.toLowerCase();
+  card.style.display=t.includes(q)?"flex":"none";
+ });
+
+});
+
+/* ---------- ADD ENTRY ---------- */
 
 function openAdd(){
  editIndex=null;
@@ -216,30 +199,41 @@ function createDefaultRows(){
 }
 
 function addRow(label="Extra", value=""){
+
  let row=document.createElement("div");
+
  row.innerHTML=`
   <input placeholder="Label" value="${label}">
   <input placeholder="Value" value="${value}">
   <button onclick="deleteRow(this)">❌</button>
  `;
+
  rows.appendChild(row);
 }
 
-function deleteRow(btn){ btn.parentElement.remove(); }
+function deleteRow(btn){
+ btn.parentElement.remove();
+}
+
 function closeAdd(){ addPopup.style.display="none"; }
 
-/* SAVE */
+/* ---------- SAVE ENTRY (FIXED CORE) ---------- */
 
 async function saveEntry(){
 
  if(actionLock) return;
+ if(!vaultMemory) return;
+
  actionLock=true;
 
  let entry={rows:[]};
 
  rows.querySelectorAll("div").forEach(r=>{
   let inputs=r.querySelectorAll("input");
-  entry.rows.push({label:inputs[0].value,value:inputs[1].value});
+  entry.rows.push({
+   label:inputs[0].value,
+   value:inputs[1].value
+  });
  });
 
  if(editIndex!==null){
@@ -248,24 +242,28 @@ async function saveEntry(){
   vaultMemory.entries.push(entry);
  }
 
- await saveVault();
- closeAdd();
+ await saveVault(); // encryption save
  loadEntries();
+ closeAdd();
+
  actionLock=false;
 }
 
-/* VIEW */
+/* ---------- VIEW ---------- */
 
 function viewEntry(i){
+
  let entry=vaultMemory.entries[i];
  let html="";
+
  entry.rows.forEach(r=>{
   html+=`
-   <div class="entryCard">
-    ${r.label}: ${r.value}
-    <button onclick="copyText('${r.value}')">Copy</button>
-   </div>`;
+  <div class="entryCard">
+   ${r.label}: ${r.value}
+   <button onclick="copyText('${r.value}')">Copy</button>
+  </div>`;
  });
+
  viewData.innerHTML=html;
  viewPopup.style.display="block";
  editIndex=i;
@@ -273,7 +271,7 @@ function viewEntry(i){
 
 function closeView(){ viewPopup.style.display="none"; }
 
-/* EDIT */
+/* ---------- EDIT ---------- */
 
 function editEntry(){
  let entry=vaultMemory.entries[editIndex];
@@ -283,64 +281,28 @@ function editEntry(){
  addPopup.style.display="block";
 }
 
-/* DELETE */
+/* ---------- DELETE ---------- */
 
 async function deleteEntry(i){
 
  if(actionLock) return;
-
- let confirmDelete=confirm("Delete this entry permanently?");
- if(!confirmDelete) return;
+ if(!confirm("Delete permanently?")) return;
 
  actionLock=true;
+
  vaultMemory.entries.splice(i,1);
  await saveVault();
+
  loadEntries();
  actionLock=false;
 }
 
-/* COPY */
+/* ---------- COPY ---------- */
 
 function copyText(t){
  navigator.clipboard.writeText(t);
  alert("Copied");
 }
 
-/* SEARCH */
-
-function openSearch(){
- searchPopup.style.display="block";
- searchInput.value="";
- searchResults.innerHTML="";
-}
-
-function closeSearch(){ searchPopup.style.display="none"; }
-
-document.getElementById("searchInput").addEventListener("input",function(){
-
- let q=this.value.toLowerCase();
- let html="";
-
- vaultMemory.entries.forEach((e,i)=>{
-  let title=e.rows[0]?.value?.toLowerCase() || "";
-  if(title.includes(q)){
-   html+=`
-   <div class="entryCard" onclick="viewEntry(${i})">
-     ${e.rows[0]?.value}
-   </div>`;
-  }
- });
-
- searchResults.innerHTML=html;
-});
-
-/* PWA */
-
-if ("serviceWorker" in navigator) {
- navigator.serviceWorker.register("sw.js");
-}
-
-</script>
-
-</body>
+</script></body>
 </html>
