@@ -75,7 +75,12 @@ button{
 }
 </style></head><body><!-- LOGIN --><div id="loginPopup" class="popup" style="display:block">
 <h3>Enter PIN</h3>
-<input id="pinInput" type="password">
+<input id="pinInput"
+       type="password"
+       inputmode="numeric"
+       pattern="[0-9]*"
+       maxlength="4"
+       autocomplete="off">
 </div><h2>Secure Vault</h2><input id="searchInput" placeholder="Search title..." style="display:none">
 <div id="dataArea"></div>
 <button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button><!-- ADD / EDIT --><div id="addPopup" class="popup">
