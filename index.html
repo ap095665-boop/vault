@@ -1,5 +1,4 @@
-<!DOCTYPE html><html>
-<head>
+<!DOCTYPE html><html><head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
 <link rel="manifest" href="manifest.json">
@@ -84,17 +83,22 @@ button{
 </div><h2>Secure Vault</h2><input id="searchInput" placeholder="Search title..." style="display:none">
 <div id="dataArea"></div>
 <button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button><!-- ADD / EDIT --><div id="addPopup" class="popup">
-<h3>Add Entry</h3>
+<h3>Add Entry</h3><button onclick="openOCR()">📷 Scan Text</button>
+
 <div id="rows"></div>
 <button onclick="addRow()">+ Add Row</button>
 <button onclick="saveEntry()">Save</button>
 <button onclick="closeAdd()">Cancel</button>
+</div><!-- OCR POPUP --><div id="ocrPopup" class="popup">
+<h3>Scan & Edit Text</h3><input type="file" accept="image/*" capture="environment" onchange="processOCR(this)"><textarea id="ocrText" placeholder="Scanned text appears here..." style="width:95%;height:220px;"></textarea><button onclick="fillFields()">Fill Entry Fields</button>
+<button onclick="closeOCR()">Cancel</button>
+
 </div><!-- VIEW --><div id="viewPopup" class="popup">
 <h3>Entry</h3>
 <div id="viewData"></div>
 <button onclick="editEntry()">Edit</button>
 <button onclick="closeView()">Close</button>
-</div><script src="crypto-engine.js"></script><script>
+</div><script src="crypto-engine.js"></script><script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script><script>
 
 let actionLock=false;
 let editIndex=null;
@@ -110,9 +114,7 @@ document.getElementById("pinInput").addEventListener("input", async function(){
 
  let salt=localStorage.getItem("vaultSalt");
 
- /* NEW USER */
  if(!salt){
-
   if(!creatingPin){
    firstPin=pin;
    creatingPin=true;
@@ -127,11 +129,9 @@ document.getElementById("pinInput").addEventListener("input", async function(){
   }else{
    alert("PIN mismatch");
   }
-
   return;
  }
 
- /* EXISTING USER */
  let ok=await unlockVault(pin);
  if(ok) afterLogin();
 
@@ -158,7 +158,6 @@ function loadEntries(){
  let html="";
 
  vaultMemory.entries.forEach((e,i)=>{
-
   let title=e.rows?.[0]?.value || "Untitled";
 
   html+=`
@@ -175,16 +174,13 @@ function loadEntries(){
 /* ---------- SEARCH ---------- */
 
 document.getElementById("searchInput").addEventListener("input",function(){
-
  let q=this.value.toLowerCase();
-
  let cards=document.querySelectorAll(".entryCard");
 
  cards.forEach(card=>{
   let t=card.innerText.toLowerCase();
   card.style.display=t.includes(q)?"flex":"none";
  });
-
 });
 
 /* ---------- ADD ENTRY ---------- */
@@ -204,25 +200,60 @@ function createDefaultRows(){
 }
 
 function addRow(label="Extra", value=""){
-
  let row=document.createElement("div");
-
  row.innerHTML=`
   <input placeholder="Label" value="${label}">
   <input placeholder="Value" value="${value}">
   <button onclick="deleteRow(this)">❌</button>
  `;
-
  rows.appendChild(row);
 }
 
-function deleteRow(btn){
- btn.parentElement.remove();
-}
-
+function deleteRow(btn){ btn.parentElement.remove(); }
 function closeAdd(){ addPopup.style.display="none"; }
 
-/* ---------- SAVE ENTRY (FIXED CORE) ---------- */
+/* ---------- OCR FUNCTIONS ---------- */
+
+function openOCR(){
+ ocrPopup.style.display="block";
+}
+
+function closeOCR(){
+ ocrPopup.style.display="none";
+}
+
+async function processOCR(input){
+
+ const file=input.files[0];
+ if(!file) return;
+
+ const reader=new FileReader();
+ reader.onload=async function(){
+
+  ocrText.value="Scanning...";
+  const img=reader.result;
+
+  const result=await Tesseract.recognize(img,'eng');
+  ocrText.value=result.data.text;
+
+ };
+
+ reader.readAsDataURL(file);
+}
+
+function fillFields(){
+
+ let text=ocrText.value;
+ let lines=text.split("\n").filter(l=>l.trim());
+
+ lines.forEach(line=>{
+  addRow("Scanned", line.trim());
+ });
+
+ closeOCR();
+}
+
+/* ---------- SAVE ENTRY ---------- */
 
 async function saveEntry(){
 
@@ -247,7 +278,7 @@ async function saveEntry(){
   vaultMemory.entries.push(entry);
  }
 
- await saveVault(); // encryption save
+ await saveVault();
  loadEntries();
  closeAdd();
 
@@ -257,10 +288,8 @@ async function saveEntry(){
 /* ---------- VIEW ---------- */
 
 function viewEntry(i){
-
  let entry=vaultMemory.entries[i];
  let html="";
-
  entry.rows.forEach(r=>{
   html+=`
   <div class="entryCard">
