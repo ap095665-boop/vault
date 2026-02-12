@@ -99,13 +99,19 @@ function createDefaultRows(){
  addRow("Sub Data");
 }
 
-function addRow(label="Extra"){
- rows.innerHTML+=`
- <div>
+function addRow(label="Extra", value=""){
+
+ let row=document.createElement("div");
+
+ row.innerHTML=`
   <input placeholder="Label" value="${label}">
-  <input placeholder="Value">
- </div>`;
+  <input placeholder="Value" value="${value}">
+  <button onclick="deleteRow(this)">❌</button>
+ `;
+
+ rows.appendChild(row);
 }
+ 
 
 function closeAdd(){ addPopup.style.display="none"; }
 
@@ -131,6 +137,10 @@ async function saveEntry(){
  loadEntries();
  actionLock=false;
 }
+ function deleteRow(btn){
+ btn.parentElement.remove();
+}
+ 
 
 /* VIEW */
 function viewEntry(i){
