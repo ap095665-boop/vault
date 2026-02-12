@@ -1,356 +1,304 @@
-<!DOCTYPE html><html>
-<head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Secure Vault</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#000000">
-
-<style>
-body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}
-
+<!DOCTYPE html><html>  <head>  
+<meta name="viewport" content="width=device-width, initial-scale=1.0">  
+<title>Secure Vault</title>  
+<link rel="manifest" href="manifest.json">  
+<meta name="theme-color" content="#000000"><style>  
+body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:center}  /* cards */
 .entryCard{
- background:#fff;
- margin:12px;
- padding:18px;
- border-radius:16px;
- display:flex;
- align-items:center;
- position:relative;
- color:#000;
+background:#fff;
+margin:12px;
+padding:18px;
+border-radius:16px;
+display:flex;
+align-items:center;
+position:relative;
+color:#000;
 }
 
 .entryTitle{flex:1;font-size:18px}
 
 .openBtn{
- margin-right:60px;
- background:#111;
- color:#00ff88;
- padding:10px 16px;
- border-radius:10px;
- border:none;
+margin-right:60px;
+background:#111;
+color:#00ff88;
+padding:10px 16px;
+border-radius:10px;
+border:none;
 }
 
 .deleteEdge{
- position:absolute;
- right:12px;
- top:50%;
- transform:translateY(-50%);
- background:none;
- border:none;
- font-size:22px;
- color:#ff4d4d;
+position:absolute;
+right:12px;
+top:50%;
+transform:translateY(-50%);
+background:none;
+border:none;
+font-size:22px;
+color:#ff4d4d;
 }
 
+/* inputs */
 input{
- width:90%;
- padding:12px;
- margin:6px;
- background:#fff;
- color:#000;
- border:none;
- border-radius:8px;
+width:90%;
+padding:12px;
+margin:6px;
+background:#fff;
+color:#000;
+border:none;
+border-radius:8px;
 }
 
+/* buttons */
 button{
- padding:10px;
- margin:6px;
- border:none;
- border-radius:10px;
- background:#111;
- color:#00ff88;
+padding:10px;
+margin:6px;
+border:none;
+border-radius:10px;
+background:#111;
+color:#00ff88;
 }
 
+/* popup */
 .popup{
- position:fixed;
- top:0;
- left:0;
- right:0;
- bottom:0;
- background:#000;
- padding:20px;
- display:none;
- overflow:auto;
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:#000;
+padding:20px;
+display:none;
+overflow:auto;
 }
-</style>
-</head>
+</style></head><body><!-- LOGIN --><div id="loginPopup" class="popup" style="display:block">
 
-<body>
-
-<!-- LOGIN -->
-<div id="loginPopup" class="popup" style="display:block">
-<h3>Enter PIN</h3>
-<input id="pinInput"
- type="password"
- inputmode="numeric"
- pattern="[0-9]*"
- maxlength="4"
- autocomplete="off">
-</div>
-
-<h2>Secure Vault</h2>
-
-<input id="searchInput" placeholder="Search title..." style="display:none">
-<div id="dataArea"></div>
-
-<button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button>
-
-<!-- ADD / EDIT -->
-<div id="addPopup" class="popup">
-<h3>Add Entry</h3>
-
-<!-- OCR BUTTON (UI unchanged style) -->
-<button onclick="openOCR()">Scan Text</button>
-
-<div id="rows"></div>
-<button onclick="addRow()">+ Add Row</button>
-<button onclick="saveEntry()">Save</button>
-<button onclick="closeAdd()">Cancel</button>
-</div>
-
-<!-- OCR POPUP -->
-<div id="ocrPopup" class="popup">
-<h3>Scan & Edit Text</h3>
-
-<input type="file" accept="image/*" capture="environment" onchange="processOCR(this)">
-
-<textarea id="ocrText" style="width:95%;height:220px;"></textarea>
-
-<button onclick="fillFields()">Fill Entry Fields</button>
-<button onclick="closeOCR()">Cancel</button>
-</div>
-
-<!-- VIEW -->
-<div id="viewPopup" class="popup">
-<h3>Entry</h3>
-<div id="viewData"></div>
-<button onclick="editEntry()">Edit</button>
-<button onclick="closeView()">Close</button>
-</div>
-
-<script src="crypto-engine.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-
-<script>
-
-let actionLock=false;
+<h3>Enter PIN</h3>  
+<input id="pinInput"  
+       type="password"  
+       inputmode="numeric"  
+       pattern="[0-9]*"  
+       maxlength="4"  
+       autocomplete="off">  
+</div><h2>Secure Vault</h2><input id="searchInput" placeholder="Search title..." style="display:none">  
+<div id="dataArea"></div>  
+<button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button><!-- ADD / EDIT --><div id="addPopup" class="popup">  
+<h3>Add Entry</h3>  
+<div id="rows"></div>  
+<button onclick="addRow()">+ Add Row</button>  
+<button onclick="saveEntry()">Save</button>  
+<button onclick="closeAdd()">Cancel</button>  
+</div><!-- VIEW --><div id="viewPopup" class="popup">  
+<h3>Entry</h3>  
+<div id="viewData"></div>  
+<button onclick="editEntry()">Edit</button>  
+<button onclick="closeView()">Close</button>  
+</div><script src="crypto-engine.js"></script><script>  let actionLock=false;
 let editIndex=null;
 let creatingPin=false;
 let firstPin=null;
 
-/* PIN LOGIN */
+/* ---------- AUTO PIN LOGIN ---------- */
 
 document.getElementById("pinInput").addEventListener("input", async function(){
 
- const pin=this.value;
- if(pin.length<4) return;
+const pin=this.value;
+if(pin.length<4) return;
 
- let salt=localStorage.getItem("vaultSalt");
+let salt=localStorage.getItem("vaultSalt");
 
- if(!salt){
+/* NEW USER */
+if(!salt){
 
-  if(!creatingPin){
-   firstPin=pin;
-   creatingPin=true;
-   this.value="";
-   alert("Confirm PIN");
-   return;
-  }
+if(!creatingPin){
+firstPin=pin;
+creatingPin=true;
+this.value="";
+alert("Confirm PIN");
+return;
+}
 
-  if(pin===firstPin){
-   await createVault(pin);
-   afterLogin();
-  }else alert("PIN mismatch");
+if(pin===firstPin){
+await createVault(pin);
+afterLogin();
+}else{
+alert("PIN mismatch");
+}
 
-  return;
- }
+return;
+}
 
- let ok=await unlockVault(pin);
- if(ok) afterLogin();
+/* EXISTING USER */
+let ok=await unlockVault(pin);
+if(ok) afterLogin();
 
 });
 
+/* ---------- AFTER LOGIN ---------- */
+
 function afterLogin(){
- loginPopup.style.display="none";
- addBtn.style.display="block";
- searchInput.style.display="block";
- loadEntries();
+loginPopup.style.display="none";
+addBtn.style.display="block";
+searchInput.style.display="block";
+loadEntries();
 }
 
-/* LOAD ENTRIES */
+/* ---------- LOAD ENTRIES ---------- */
 
 function loadEntries(){
 
- if(!vaultMemory || !vaultMemory.entries){
-  dataArea.innerHTML="";
-  return;
- }
-
- let html="";
-
- vaultMemory.entries.forEach((e,i)=>{
-
-  let title=e.rows?.[0]?.value || "Untitled";
-
-  html+=`
-  <div class="entryCard">
-    <div class="entryTitle">${title}</div>
-    <button class="openBtn" onclick="viewEntry(${i})">Open</button>
-    <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>
-  </div>`;
- });
-
- dataArea.innerHTML=html;
+if(!vaultMemory || !vaultMemory.entries){
+dataArea.innerHTML="";
+return;
 }
 
-/* SEARCH */
+let html="";
 
-searchInput.addEventListener("input",function(){
- let q=this.value.toLowerCase();
- document.querySelectorAll(".entryCard").forEach(card=>{
-  card.style.display=card.innerText.toLowerCase().includes(q)?"flex":"none";
- });
+vaultMemory.entries.forEach((e,i)=>{
+
+let title=e.rows?.[0]?.value || "Untitled";
+
+html+=`
+
+  <div class="entryCard">  
+    <div class="entryTitle">${title}</div>  
+    <button class="openBtn" onclick="viewEntry(${i})">Open</button>  
+    <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>  
+  </div>`;  
+ });  dataArea.innerHTML=html;
+}
+
+/* ---------- SEARCH ---------- */
+
+document.getElementById("searchInput").addEventListener("input",function(){
+
+let q=this.value.toLowerCase();
+
+let cards=document.querySelectorAll(".entryCard");
+
+cards.forEach(card=>{
+let t=card.innerText.toLowerCase();
+card.style.display=t.includes(q)?"flex":"none";
 });
 
-/* ADD ENTRY */
+});
+
+/* ---------- ADD ENTRY ---------- */
 
 function openAdd(){
- editIndex=null;
- rows.innerHTML="";
- createDefaultRows();
- addPopup.style.display="block";
+editIndex=null;
+rows.innerHTML="";
+createDefaultRows();
+addPopup.style.display="block";
 }
 
 function createDefaultRows(){
- addRow("Title");
- addRow("Name");
- addRow("Data");
- addRow("Sub Data");
+addRow("Title");
+addRow("Name");
+addRow("Data");
+addRow("Sub Data");
 }
 
 function addRow(label="Extra", value=""){
- let row=document.createElement("div");
- row.innerHTML=`
-  <input placeholder="Label" value="${label}">
-  <input placeholder="Value" value="${value}">
-  <button onclick="deleteRow(this)">❌</button>
- `;
- rows.appendChild(row);
+
+let row=document.createElement("div");
+
+row.innerHTML=  <input placeholder="Label" value="${label}">   <input placeholder="Value" value="${value}">   <button onclick="deleteRow(this)">❌</button>  ;
+
+rows.appendChild(row);
 }
 
-function deleteRow(btn){ btn.parentElement.remove(); }
+function deleteRow(btn){
+btn.parentElement.remove();
+}
+
 function closeAdd(){ addPopup.style.display="none"; }
 
-/* SAVE */
+/* ---------- SAVE ENTRY (FIXED CORE) ---------- */
 
 async function saveEntry(){
 
- if(actionLock || !vaultMemory) return;
- actionLock=true;
+if(actionLock) return;
+if(!vaultMemory) return;
 
- let entry={rows:[]};
+actionLock=true;
 
- rows.querySelectorAll("div").forEach(r=>{
-  let inputs=r.querySelectorAll("input");
-  entry.rows.push({label:inputs[0].value,value:inputs[1].value});
- });
+let entry={rows:[]};
 
- if(editIndex!==null){
-  vaultMemory.entries[editIndex]=entry;
- }else{
-  vaultMemory.entries.push(entry);
- }
+rows.querySelectorAll("div").forEach(r=>{
+let inputs=r.querySelectorAll("input");
+entry.rows.push({
+label:inputs[0].value,
+value:inputs[1].value
+});
+});
 
- await saveVault();
- loadEntries();
- closeAdd();
- actionLock=false;
+if(editIndex!==null){
+vaultMemory.entries[editIndex]=entry;
+}else{
+vaultMemory.entries.push(entry);
 }
 
-/* VIEW */
+await saveVault(); // encryption save
+loadEntries();
+closeAdd();
+
+actionLock=false;
+}
+
+/* ---------- VIEW ---------- */
 
 function viewEntry(i){
- let entry=vaultMemory.entries[i];
- let html="";
- entry.rows.forEach(r=>{
-  html+=`
-  <div class="entryCard">
-   ${r.label}: ${r.value}
-   <button onclick="copyText('${r.value}')">Copy</button>
-  </div>`;
- });
 
- viewData.innerHTML=html;
- viewPopup.style.display="block";
- editIndex=i;
+let entry=vaultMemory.entries[i];
+let html="";
+
+entry.rows.forEach(r=>{
+html+=`
+
+  <div class="entryCard">  
+   ${r.label}: ${r.value}  
+   <button onclick="copyText('${r.value}')">Copy</button>  
+  </div>`;  
+ });  viewData.innerHTML=html;
+viewPopup.style.display="block";
+editIndex=i;
 }
 
 function closeView(){ viewPopup.style.display="none"; }
 
+/* ---------- EDIT ---------- */
+
 function editEntry(){
- let entry=vaultMemory.entries[editIndex];
- rows.innerHTML="";
- entry.rows.forEach(r=>addRow(r.label,r.value));
- viewPopup.style.display="none";
- addPopup.style.display="block";
+let entry=vaultMemory.entries[editIndex];
+rows.innerHTML="";
+entry.rows.forEach(r=>addRow(r.label,r.value));
+viewPopup.style.display="none";
+addPopup.style.display="block";
 }
 
-/* DELETE */
+/* ---------- DELETE ---------- */
 
 async function deleteEntry(i){
- if(actionLock || !confirm("Delete permanently?")) return;
- actionLock=true;
- vaultMemory.entries.splice(i,1);
- await saveVault();
- loadEntries();
- actionLock=false;
+
+if(actionLock) return;
+if(!confirm("Delete permanently?")) return;
+
+actionLock=true;
+
+vaultMemory.entries.splice(i,1);
+await saveVault();
+
+loadEntries();
+actionLock=false;
 }
 
-/* COPY */
+/* ---------- COPY ---------- */
 
 function copyText(t){
- navigator.clipboard.writeText(t);
- alert("Copied");
+navigator.clipboard.writeText(t);
+alert("Copied");
 }
 
-/* OCR */
+</script></body>
 
-function openOCR(){
- ocrPopup.style.display="block";
-}
-
-function closeOCR(){
- ocrPopup.style.display="none";
-}
-
-async function processOCR(input){
-
- const file=input.files[0];
- if(!file) return;
-
- ocrText.value="Loading OCR...";
-
- const worker = await Tesseract.createWorker();
- await worker.loadLanguage('eng');
- await worker.initialize('eng');
-
- const { data:{ text } } = await worker.recognize(file);
-
- ocrText.value=text;
-
- await worker.terminate();
-}
-
-function fillFields(){
-
- let lines=ocrText.value.split("\n").filter(l=>l.trim());
-
- lines.forEach(line=>{
-  addRow("Scanned",line.trim());
- });
-
- closeOCR();
-}
-
-</script>
-</body>
 </html>
