@@ -18,10 +18,13 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  align-items:center;
  position:relative;
  color:#000;
+ overflow:hidden;
+ transition: transform .18s ease, box-shadow .18s ease;
 }
 
 .entryTitle{flex:1;font-size:18px}
 
+/* open button */
 .openBtn{
  margin-right:60px;
  background:#111;
@@ -29,8 +32,12 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  padding:10px 16px;
  border-radius:10px;
  border:none;
+ transition:.15s;
 }
 
+.openBtn:active{transform:scale(.95)}
+
+/* delete */
 .deleteEdge{
  position:absolute;
  right:12px;
@@ -75,107 +82,37 @@ button{
  display:none;
  overflow:auto;
 }
-  /* CARD MICRO-ANIMATION */
 
-.entryCard{
- transition: transform 0.18s ease,
-             box-shadow 0.18s ease,
-             background 0.18s ease;
- will-change: transform;
-}
-
-/* hover for desktop */
-.entryCard:hover{
- transform: translateY(-4px) scale(1.01);
- box-shadow: 0 10px 25px rgba(0,255,136,0.15);
-}
-
-/* tap effect mobile */
-.entryCard:active{
- transform: scale(0.97);
- box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-}
-
-/* smooth open button feedback */
-.openBtn{
- transition: transform .15s ease, box-shadow .15s ease;
-}
-
-.openBtn:active{
- transform: scale(.94);
- box-shadow: 0 2px 8px rgba(0,0,0,0.5);
-}
-
-/* delete button micro pulse */
-.deleteEdge{
- transition: transform .15s ease;
-}
-
-.deleteEdge:active{
- transform: scale(1.25);
-}
-/* scanning glow base */
-.entryCard{
- position:relative;
- overflow:hidden;
-}
-
-/* moving scan light */
+/* SCAN ANIMATION FIXED */
 .entryCard::after{
  content:"";
  position:absolute;
  top:0;
- left:-100%;
+ left:0;
  width:100%;
  height:100%;
+ pointer-events:none;
  background:linear-gradient(
-   120deg,
-   transparent,
-   rgba(0,255,136,0.25),
-   rgba(0,200,255,0.25),
-   rgba(255,0,150,0.25),
-   transparent
+ 120deg,
+ transparent,
+ rgba(0,255,136,0.25),
+ rgba(0,200,255,0.25),
+ rgba(255,0,150,0.25),
+ transparent
  );
- transition: none;
+ transform:translateX(-120%);
 }
 
-/* active scan animation */
 .entryCard.scan::after{
- animation: scanMove 1.2s linear;
+ animation:scanMove 1.2s linear;
 }
 
 @keyframes scanMove{
- from{ left:-100%; }
- to{ left:100%; }
+ from{ transform:translateX(-120%);}
+ to{ transform:translateX(120%);}
 }
 
- /* OPEN button premium glow */
-
-.openBtn{
- position:relative;
- overflow:hidden;
-}
-
-.openBtn::after{
- content:"";
- position:absolute;
- inset:0;
- border-radius:10px;
- box-shadow:0 0 0px rgba(0,255,136,0);
- transition:box-shadow .3s;
-}
-
-.openBtn.pulse::after{
- animation:pulseGlow 1.6s ease-in-out infinite;
-}
-
-@keyframes pulseGlow{
- 0%{ box-shadow:0 0 0px rgba(0,255,136,0); }
- 50%{ box-shadow:0 0 18px rgba(0,255,136,0.6); }
- 100%{ box-shadow:0 0 0px rgba(0,255,136,0); }
-}
- /* cyber typing animation */
-
+/* typing */
 .cyberText{
  display:inline-block;
  white-space:nowrap;
@@ -185,38 +122,28 @@ button{
 }
 
 @keyframes typing{
- from{ width:0 }
- to{ width:100% }
+ from{width:0}
+ to{width:100%}
 }
-
 @keyframes blink{
- 0%,100%{ border-color:transparent }
- 50%{ border-color:#00ff88 }
+ 50%{border-color:transparent}
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOGIN -->
 <div id="loginPopup" class="popup" style="display:block">
 <h3>Enter PIN</h3>
-<input id="pinInput"
- type="password"
- inputmode="numeric"
- pattern="[0-9]*"
- maxlength="4"
- autocomplete="off">
+<input id="pinInput" type="password" inputmode="numeric" maxlength="4">
 </div>
 
 <h2>Secure Vault</h2>
 
 <input id="searchInput" placeholder="Search title..." style="display:none">
 <div id="dataArea"></div>
-
 <button id="addBtn" onclick="openAdd()" style="display:none">+ Add Entry</button>
 
-<!-- ADD / EDIT -->
 <div id="addPopup" class="popup">
 <h3>Add Entry</h3>
 <div id="rows"></div>
@@ -225,7 +152,6 @@ button{
 <button onclick="closeAdd()">Cancel</button>
 </div>
 
-<!-- VIEW -->
 <div id="viewPopup" class="popup">
 <h3>Entry</h3>
 <div id="viewData"></div>
@@ -242,43 +168,22 @@ let editIndex=null;
 let creatingPin=false;
 let firstPin=null;
 
-/* AUTO PIN LOGIN */
-
 document.getElementById("pinInput").addEventListener("input", async function(){
-
  const pin=this.value;
  if(pin.length<4) return;
 
  let salt=localStorage.getItem("vaultSalt");
 
- /* NEW USER */
  if(!salt){
-
-  if(!creatingPin){
-   firstPin=pin;
-   creatingPin=true;
-   this.value="";
-   alert("Confirm PIN");
-   return;
-  }
-
-  if(pin===firstPin){
-   await createVault(pin);
-   afterLogin();
-  }else{
-   alert("PIN mismatch");
-  }
-
+  if(!creatingPin){ firstPin=pin; creatingPin=true; this.value=""; alert("Confirm PIN"); return;}
+  if(pin===firstPin){ await createVault(pin); afterLogin(); }
+  else alert("PIN mismatch");
   return;
  }
 
- /* EXISTING USER */
  let ok=await unlockVault(pin);
  if(ok) afterLogin();
-
 });
-
-/* AFTER LOGIN */
 
 function afterLogin(){
  loginPopup.style.display="none";
@@ -287,21 +192,12 @@ function afterLogin(){
  loadEntries();
 }
 
-/* LOAD ENTRIES */
-
 function loadEntries(){
-
- if(!vaultMemory || !vaultMemory.entries){
-  dataArea.innerHTML="";
-  return;
- }
+ if(!vaultMemory || !vaultMemory.entries){ dataArea.innerHTML=""; return;}
 
  let html="";
-
  vaultMemory.entries.forEach((e,i)=>{
-
   let title=e.rows?.[0]?.value || "Untitled";
-
   html+=`
   <div class="entryCard">
     <div class="entryTitle"><span class="cyberText">${title}</span></div>
@@ -311,176 +207,91 @@ function loadEntries(){
  });
 
  dataArea.innerHTML=html;
-startScanAnimation();
-startOpenPulse();
+ startScanAnimation();
  disableTypingAfterLoad();
 }
 
-/* SEARCH */
-
-document.getElementById("searchInput").addEventListener("input",function(){
-
- let q=this.value.toLowerCase();
-
- let cards=document.querySelectorAll(".entryCard");
-
- cards.forEach(card=>{
-  let t=card.innerText.toLowerCase();
-  card.style.display=t.includes(q)?"flex":"none";
+function startScanAnimation(){
+ const cards=document.querySelectorAll(".entryCard");
+ cards.forEach((card,index)=>{
+  setTimeout(()=>{ card.classList.add("scan");
+   setTimeout(()=>card.classList.remove("scan"),1200);
+  }, index*250);
  });
-
-});
-
-/* ADD ENTRY */
-
-function openAdd(){
- editIndex=null;
- rows.innerHTML="";
- createDefaultRows();
- addPopup.style.display="block";
 }
 
-function createDefaultRows(){
- addRow("Title");
- addRow("Name");
- addRow("Data");
- addRow("Sub Data");
+function disableTypingAfterLoad(){
+ setTimeout(()=>{
+  document.querySelectorAll(".cyberText").forEach(e=>{
+   e.style.borderRight="none";
+   e.style.animation="none";
+  });
+ },1400);
 }
 
-/* FIXED addRow FUNCTION */
+/* rest same */
+
+function openAdd(){ editIndex=null; rows.innerHTML=""; createDefaultRows(); addPopup.style.display="block";}
+function createDefaultRows(){ addRow("Title"); addRow("Name"); addRow("Data"); addRow("Sub Data");}
 
 function addRow(label="Extra", value=""){
-
  let row=document.createElement("div");
-
  row.innerHTML=`
   <input placeholder="Label" value="${label}">
   <input placeholder="Value" value="${value}">
-  <button onclick="deleteRow(this)">❌</button>
- `;
-
+  <button onclick="deleteRow(this)">❌</button>`;
  rows.appendChild(row);
 }
 
-function deleteRow(btn){
- btn.parentElement.remove();
-}
-
-function closeAdd(){ addPopup.style.display="none"; }
-
-/* SAVE ENTRY */
+function deleteRow(btn){ btn.parentElement.remove();}
+function closeAdd(){ addPopup.style.display="none";}
 
 async function saveEntry(){
-
  if(actionLock) return;
- if(!vaultMemory) return;
-
  actionLock=true;
 
  let entry={rows:[]};
-
  rows.querySelectorAll("div").forEach(r=>{
   let inputs=r.querySelectorAll("input");
-  entry.rows.push({
-   label:inputs[0].value,
-   value:inputs[1].value
-  });
+  entry.rows.push({label:inputs[0].value,value:inputs[1].value});
  });
 
- if(editIndex!==null){
-  vaultMemory.entries[editIndex]=entry;
- }else{
-  vaultMemory.entries.push(entry);
- }
+ if(editIndex!==null) vaultMemory.entries[editIndex]=entry;
+ else vaultMemory.entries.push(entry);
 
  await saveVault();
  loadEntries();
  closeAdd();
-
  actionLock=false;
 }
 
-/* VIEW */
-
 function viewEntry(i){
-
  let entry=vaultMemory.entries[i];
  let html="";
-
  entry.rows.forEach(r=>{
-  html+=`
-  <div class="entryCard">
-   ${r.label}: ${r.value}
-   <button onclick="copyText('${r.value}')">Copy</button>
-  </div>`;
+  html+=`<div class="entryCard">${r.label}: ${r.value}
+  <button onclick="copyText('${r.value}')">Copy</button></div>`;
  });
-
  viewData.innerHTML=html;
  viewPopup.style.display="block";
  editIndex=i;
 }
 
-function closeView(){ viewPopup.style.display="none"; }
-
-/* EDIT */
-
-function editEntry(){
- let entry=vaultMemory.entries[editIndex];
- rows.innerHTML="";
- entry.rows.forEach(r=>addRow(r.label,r.value));
- viewPopup.style.display="none";
- addPopup.style.display="block";
-}
-
-/* DELETE */
+function closeView(){ viewPopup.style.display="none";}
+function editEntry(){ let entry=vaultMemory.entries[editIndex]; rows.innerHTML=""; entry.rows.forEach(r=>addRow(r.label,r.value)); viewPopup.style.display="none"; addPopup.style.display="block";}
 
 async function deleteEntry(i){
-
  if(actionLock) return;
  if(!confirm("Delete permanently?")) return;
-
  actionLock=true;
-
  vaultMemory.entries.splice(i,1);
  await saveVault();
-
  loadEntries();
  actionLock=false;
 }
 
-/* COPY */
+function copyText(t){ navigator.clipboard.writeText(t); alert("Copied");}
 
-function copyText(t){
- navigator.clipboard.writeText(t);
- alert("Copied");
-}
-function startScanAnimation(){
-function startOpenPulse(){
- document.querySelectorAll(".openBtn").forEach(btn=>{
-   btn.classList.add("pulse");
- });
-}
- const cards=document.querySelectorAll(".entryCard");
-
- cards.forEach((card,index)=>{
-   setTimeout(()=>{
-     card.classList.add("scan");
-
-     setTimeout(()=>{
-       card.classList.remove("scan");
-     },1200);
-
-   }, index*250); // delay between each card
- });
-}
- function disableTypingAfterLoad(){
- setTimeout(()=>{
-   document.querySelectorAll(".cyberText").forEach(e=>{
-     e.style.borderRight="none";
-     e.style.animation="none";
-   });
- },1400);
-}
 </script>
 
 </body>
