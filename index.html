@@ -24,12 +24,21 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
 }
 
 /* title */
-.entryTitle{
+..entryTitle{
  flex:1;
  font-size:18px;
- white-space:nowrap;
- overflow:hidden;
- text-overflow:ellipsis;
+
+ white-space:nowrap;      /* keep text in one line */
+ overflow-x:auto;         /* enable horizontal scroll */
+ overflow-y:hidden;
+ text-overflow:unset;
+
+ scrollbar-width:none;    /* hide scrollbar Firefox */
+}
+
+/* hide scrollbar Chrome/Safari */
+.entryTitle::-webkit-scrollbar{
+ display:none;
 }
 
 /* prevent buttons collapse */
