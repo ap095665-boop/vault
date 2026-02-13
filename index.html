@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
@@ -23,27 +22,20 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  transition: transform .18s ease, box-shadow .18s ease;
 }
 
-/* title */
+/* TITLE scroll if long */
 .entryTitle{
  flex:1;
  font-size:18px;
-
- white-space:nowrap;      /* keep text in one line */
- overflow-x:auto;         /* enable horizontal scroll */
+ white-space:nowrap;
+ overflow-x:auto;
  overflow-y:hidden;
- text-overflow:unset;
-
- scrollbar-width:none;    /* hide scrollbar Firefox */
+ scrollbar-width:none;
 }
+.entryTitle::-webkit-scrollbar{display:none}
 
-/* hide scrollbar Chrome/Safari */
-.entryTitle::-webkit-scrollbar{
- display:none;
-}
-
-/* prevent buttons collapse */
-.openBtn{ flex-shrink:0; }
-.deleteEdge{ flex-shrink:0; }
+/* prevent buttons shrink */
+.openBtn{flex-shrink:0}
+.deleteEdge{flex-shrink:0}
 
 /* open button */
 .openBtn{
@@ -103,7 +95,7 @@ button{
  overflow:auto;
 }
 
-/* SCAN ANIMATION */
+/* scan animation */
 .entryCard::after{
  content:"";
  position:absolute;
@@ -112,25 +104,11 @@ button{
  width:100%;
  height:100%;
  pointer-events:none;
- background:linear-gradient(
- 120deg,
- transparent,
- rgba(0,255,136,0.25),
- rgba(0,200,255,0.25),
- rgba(255,0,150,0.25),
- transparent
- );
+ background:linear-gradient(120deg,transparent,rgba(0,255,136,0.25),rgba(0,200,255,0.25),rgba(255,0,150,0.25),transparent);
  transform:translateX(-120%);
 }
-
-.entryCard.scan::after{
- animation:scanMove 1.2s linear;
-}
-
-@keyframes scanMove{
- from{ transform:translateX(-120%);}
- to{ transform:translateX(120%);}
-}
+.entryCard.scan::after{animation:scanMove 1.2s linear}
+@keyframes scanMove{from{transform:translateX(-120%)}to{transform:translateX(120%)}}
 
 /* typing */
 .cyberText{
@@ -140,14 +118,17 @@ button{
  border-right:2px solid #00ff88;
  animation:typing 1.2s steps(20,end), blink .8s infinite;
 }
+@keyframes typing{from{width:0}to{width:100%}}
+@keyframes blink{50%{border-color:transparent}}
 
-@keyframes typing{
- from{width:0}
- to{width:100%}
+/* view text copy gesture */
+.viewText{
+ word-break:break-word;
+ line-height:1.4;
+ padding:6px;
+ border-radius:10px;
 }
-@keyframes blink{
- 50%{border-color:transparent}
-}
+.viewText:active{background:rgba(0,255,136,0.08)}
 </style>
 </head>
 
@@ -207,8 +188,6 @@ document.getElementById("pinInput").addEventListener("input", async function(){
  if(ok) afterLogin();
 });
 
-/* AFTER LOGIN */
-
 function afterLogin(){
  loginPopup.style.display="none";
  addBtn.style.display="block";
@@ -216,7 +195,7 @@ function afterLogin(){
  loadEntries();
 }
 
-/* LOAD */
+/* LOAD ENTRIES */
 
 function loadEntries(){
  if(!vaultMemory || !vaultMemory.entries){ dataArea.innerHTML=""; return;}
@@ -237,19 +216,14 @@ function loadEntries(){
  disableTypingAfterLoad();
 }
 
-/* SCAN */
-
 function startScanAnimation(){
  const cards=document.querySelectorAll(".entryCard");
  cards.forEach((card,index)=>{
-  setTimeout(()=>{
-   card.classList.add("scan");
+  setTimeout(()=>{ card.classList.add("scan");
    setTimeout(()=>card.classList.remove("scan"),1200);
   }, index*250);
  });
 }
-
-/* typing stop */
 
 function disableTypingAfterLoad(){
  setTimeout(()=>{
@@ -263,30 +237,17 @@ function disableTypingAfterLoad(){
 /* SEARCH */
 
 document.getElementById("searchInput").addEventListener("input", function(){
-
- const query = this.value.toLowerCase();
-
- const cards = document.querySelectorAll("#dataArea .entryCard");
-
- cards.forEach(card => {
-
-   const titleElement = card.querySelector(".entryTitle");
-
+ const query=this.value.toLowerCase();
+ const cards=document.querySelectorAll(".entryCard");
+ cards.forEach(card=>{
+   const titleElement=card.querySelector(".entryTitle");
    if(!titleElement) return;
-
-   const titleText = titleElement.innerText.toLowerCase();
-
-   if(titleText.includes(query)){
-     card.style.display = "flex";
-   }else{
-     card.style.display = "none";
-   }
-
+   const titleText=titleElement.innerText.toLowerCase();
+   card.style.display=titleText.includes(query)?"flex":"none";
  });
-
 });
 
-/* ADD */
+/* ADD ENTRY */
 
 function openAdd(){ editIndex=null; rows.innerHTML=""; createDefaultRows(); addPopup.style.display="block";}
 function createDefaultRows(){ addRow("Title"); addRow("Name"); addRow("Data"); addRow("Sub Data");}
@@ -324,14 +285,18 @@ async function saveEntry(){
  actionLock=false;
 }
 
-/* VIEW */
+/* VIEW ENTRY — DOUBLE TAP COPY */
 
 function viewEntry(i){
  let entry=vaultMemory.entries[i];
  let html="";
  entry.rows.forEach(r=>{
-  html+=`<div class="entryCard">${r.label}: ${r.value}
-  <button onclick="copyText('${r.value}')">Copy</button></div>`;
+  html+=`
+  <div class="entryCard">
+   <div class="viewText" ondblclick="copyText('${r.value}')">
+    <b>${r.label}:</b><br>${r.value}
+   </div>
+  </div>`;
  });
  viewData.innerHTML=html;
  viewPopup.style.display="block";
@@ -353,9 +318,27 @@ async function deleteEntry(i){
  actionLock=false;
 }
 
-/* COPY */
+/* COPY GESTURE */
 
-function copyText(t){ navigator.clipboard.writeText(t); alert("Copied");}
+function copyText(text){
+ navigator.clipboard.writeText(text);
+
+ const toast=document.createElement("div");
+ toast.innerText="Copied";
+ toast.style.position="fixed";
+ toast.style.bottom="30px";
+ toast.style.left="50%";
+ toast.style.transform="translateX(-50%)";
+ toast.style.background="#111";
+ toast.style.color="#00ff88";
+ toast.style.padding="10px 18px";
+ toast.style.borderRadius="12px";
+ toast.style.zIndex="9999";
+ toast.style.boxShadow="0 0 12px rgba(0,255,136,0.3)";
+ document.body.appendChild(toast);
+
+ setTimeout(()=>toast.remove(),1200);
+}
 
 </script>
 
