@@ -1,4 +1,5 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
@@ -22,38 +23,19 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  transition: transform .18s ease, box-shadow .18s ease;
 }
 
-/* FIX TITLE WRAPPING */
+/* title */
 .entryTitle{
  flex:1;
  font-size:18px;
-
- white-space:normal;       /* allow multi line */
- word-break:break-word;    /* break long words */
- line-height:1.3;
- display:-webkit-box;
- -webkit-line-clamp:2;
- -webkit-box-orient:vertical;
-  overflow-x:auto;         /* enable horizontal scroll */
- overflow-y:hidden;
- text-overflow:unset;
-
- scrollbar-width:none;    /* hide scrollbar (Firefox) */
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
 }
 
-/* hide scrollbar Chrome/Safari */
-.entryTitle::-webkit-scrollbar{
- display:none;
-}
+/* prevent buttons collapse */
+.openBtn{ flex-shrink:0; }
+.deleteEdge{ flex-shrink:0; }
 
-
-/* PREVENT BUTTON COLLAPSE */
-.openBtn{
- flex-shrink:0;            /* never shrink */
-}
-
-.deleteEdge{
- flex-shrink:0;            /* never shrink */
-}
 /* open button */
 .openBtn{
  margin-right:60px;
@@ -64,7 +46,6 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  border:none;
  transition:.15s;
 }
-
 .openBtn:active{transform:scale(.95)}
 
 /* delete */
@@ -113,7 +94,7 @@ button{
  overflow:auto;
 }
 
-/* SCAN ANIMATION FIXED */
+/* SCAN ANIMATION */
 .entryCard::after{
  content:"";
  position:absolute;
@@ -158,20 +139,6 @@ button{
 @keyframes blink{
  50%{border-color:transparent}
 }
-
- .titleScroll{
- display:inline-block;
- white-space:nowrap;
-}
-
-.titleAutoMove{
- animation:titleAutoScroll 8s linear infinite;
-}
-
-@keyframes titleAutoScroll{
- 0%   { transform:translateX(0); }
- 100% { transform:translateX(-50%); }
-}
 </style>
 </head>
 
@@ -212,6 +179,8 @@ let editIndex=null;
 let creatingPin=false;
 let firstPin=null;
 
+/* LOGIN */
+
 document.getElementById("pinInput").addEventListener("input", async function(){
  const pin=this.value;
  if(pin.length<4) return;
@@ -229,12 +198,16 @@ document.getElementById("pinInput").addEventListener("input", async function(){
  if(ok) afterLogin();
 });
 
+/* AFTER LOGIN */
+
 function afterLogin(){
  loginPopup.style.display="none";
  addBtn.style.display="block";
  searchInput.style.display="block";
  loadEntries();
 }
+
+/* LOAD */
 
 function loadEntries(){
  if(!vaultMemory || !vaultMemory.entries){ dataArea.innerHTML=""; return;}
@@ -244,9 +217,7 @@ function loadEntries(){
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
   <div class="entryCard">
-    <div class="entryTitle">
-  <span class="cyberText titleScroll">${title} • ${title}</span>
-</div>
+    <div class="entryTitle"><span class="cyberText">${title}</span></div>
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
     <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>
   </div>`;
@@ -257,33 +228,56 @@ function loadEntries(){
  disableTypingAfterLoad();
 }
 
+/* SCAN */
+
 function startScanAnimation(){
  const cards=document.querySelectorAll(".entryCard");
  cards.forEach((card,index)=>{
-  setTimeout(()=>{ card.classList.add("scan");
+  setTimeout(()=>{
+   card.classList.add("scan");
    setTimeout(()=>card.classList.remove("scan"),1200);
   }, index*250);
  });
 }
 
+/* typing stop */
+
 function disableTypingAfterLoad(){
  setTimeout(()=>{
-
    document.querySelectorAll(".cyberText").forEach(el=>{
      el.style.borderRight="none";
      el.style.animation="none";
-
-     // start auto scroll ONLY if text is long
-     const realText = el.innerText.split("•")[0].trim();
-
-if(realText.length > 18){
-   el.classList.add("titleAutoMove");
-}
    });
-
- },1400); // after typing completes
+ },1400);
 }
-/* rest same */
+
+/* SEARCH */
+
+document.getElementById("searchInput").addEventListener("input", function(){
+
+ const query = this.value.toLowerCase();
+
+ const cards = document.querySelectorAll("#dataArea .entryCard");
+
+ cards.forEach(card => {
+
+   const titleElement = card.querySelector(".entryTitle");
+
+   if(!titleElement) return;
+
+   const titleText = titleElement.innerText.toLowerCase();
+
+   if(titleText.includes(query)){
+     card.style.display = "flex";
+   }else{
+     card.style.display = "none";
+   }
+
+ });
+
+});
+
+/* ADD */
 
 function openAdd(){ editIndex=null; rows.innerHTML=""; createDefaultRows(); addPopup.style.display="block";}
 function createDefaultRows(){ addRow("Title"); addRow("Name"); addRow("Data"); addRow("Sub Data");}
@@ -299,6 +293,8 @@ function addRow(label="Extra", value=""){
 
 function deleteRow(btn){ btn.parentElement.remove();}
 function closeAdd(){ addPopup.style.display="none";}
+
+/* SAVE */
 
 async function saveEntry(){
  if(actionLock) return;
@@ -319,6 +315,8 @@ async function saveEntry(){
  actionLock=false;
 }
 
+/* VIEW */
+
 function viewEntry(i){
  let entry=vaultMemory.entries[i];
  let html="";
@@ -334,6 +332,8 @@ function viewEntry(i){
 function closeView(){ viewPopup.style.display="none";}
 function editEntry(){ let entry=vaultMemory.entries[editIndex]; rows.innerHTML=""; entry.rows.forEach(r=>addRow(r.label,r.value)); viewPopup.style.display="none"; addPopup.style.display="block";}
 
+/* DELETE */
+
 async function deleteEntry(i){
  if(actionLock) return;
  if(!confirm("Delete permanently?")) return;
@@ -344,32 +344,10 @@ async function deleteEntry(i){
  actionLock=false;
 }
 
+/* COPY */
+
 function copyText(t){ navigator.clipboard.writeText(t); alert("Copied");}
-/* SEARCH FIX — ONLY ADDING THIS */
 
-document.getElementById("searchInput").addEventListener("input", function(){
-
- const query = this.value.toLowerCase();
-
- const cards = document.querySelectorAll(".entryCard");
-
- cards.forEach(card => {
-
-   const titleElement = card.querySelector(".entryTitle");
-
-   if(!titleElement) return;
-
-   const titleText = titleElement.innerText.toLowerCase();
-
-   if(titleText.includes(query)){
-     card.style.display = "flex";
-   }else{
-     card.style.display = "none";
-   }
-
- });
-
-});
 </script>
 
 </body>
