@@ -158,6 +158,20 @@ button{
 @keyframes blink{
  50%{border-color:transparent}
 }
+
+ .titleScroll{
+ display:inline-block;
+ white-space:nowrap;
+}
+
+.titleAutoMove{
+ animation:titleAutoScroll 8s linear infinite;
+}
+
+@keyframes titleAutoScroll{
+ 0%   { transform:translateX(0); }
+ 100% { transform:translateX(-50%); }
+}
 </style>
 </head>
 
@@ -230,7 +244,9 @@ function loadEntries(){
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
   <div class="entryCard">
-    <div class="entryTitle"><span class="cyberText">${title}</span></div>
+    <div class="entryTitle">
+  <span class="cyberText titleScroll">${title} • ${title}</span>
+</div>
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
     <button class="deleteEdge" onclick="deleteEntry(${i})">❌</button>
   </div>`;
@@ -251,14 +267,21 @@ function startScanAnimation(){
 }
 
 function disableTypingAfterLoad(){
+ function disableTypingAfterLoad(){
  setTimeout(()=>{
-  document.querySelectorAll(".cyberText").forEach(e=>{
-   e.style.borderRight="none";
-   e.style.animation="none";
-  });
- },1400);
-}
 
+   document.querySelectorAll(".cyberText").forEach(el=>{
+     el.style.borderRight="none";
+     el.style.animation="none";
+
+     // start auto scroll ONLY if text is long
+     if(el.scrollWidth > el.parentElement.clientWidth){
+        el.classList.add("titleAutoMove");
+     }
+   });
+
+ },1400); // after typing completes
+}
 /* rest same */
 
 function openAdd(){ editIndex=null; rows.innerHTML=""; createDefaultRows(); addPopup.style.display="block";}
