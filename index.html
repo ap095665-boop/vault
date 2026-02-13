@@ -22,8 +22,28 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  transition: transform .18s ease, box-shadow .18s ease;
 }
 
-.entryTitle{flex:1;font-size:18px}
+/* FIX TITLE WRAPPING */
+.entryTitle{
+ flex:1;
+ font-size:18px;
 
+ white-space:normal;       /* allow multi line */
+ word-break:break-word;    /* break long words */
+ line-height:1.3;
+ display:-webkit-box;
+ -webkit-line-clamp:2;
+ -webkit-box-orient:vertical;
+ overflow:hidden;
+}
+
+/* PREVENT BUTTON COLLAPSE */
+.openBtn{
+ flex-shrink:0;            /* never shrink */
+}
+
+.deleteEdge{
+ flex-shrink:0;            /* never shrink */
+}
 /* open button */
 .openBtn{
  margin-right:60px;
