@@ -27,13 +27,23 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  flex:1;
  font-size:18px;
 
- white-space:normal;       /* allow multi line */
+ white-space:nowrap;       /* allow multi line */
  word-break:break-word;    /* break long words */
  line-height:1.3;
  display:-webkit-box;
  -webkit-line-clamp:2;
  -webkit-box-orient:vertical;
- overflow:hidden;
+  overflow-x:auto;         /* enable horizontal scroll */
+ overflow-y:hidden;
+ text-overflow:unset;
+
+ scrollbar-width:none;    /* hide scrollbar (Firefox) */
+}
+
+/* hide scrollbar Chrome/Safari */
+.entryTitle::-webkit-scrollbar{
+ display:none;
+}
 }
 
 /* PREVENT BUTTON COLLAPSE */
