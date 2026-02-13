@@ -274,9 +274,11 @@ function disableTypingAfterLoad(){
      el.style.animation="none";
 
      // start auto scroll ONLY if text is long
-     if(el.scrollWidth > el.parentElement.clientWidth){
-        el.classList.add("titleAutoMove");
-     }
+     const realText = el.innerText.split("•")[0].trim();
+
+if(realText.length > 18){
+   el.classList.add("titleAutoMove");
+}
    });
 
  },1400); // after typing completes
