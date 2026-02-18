@@ -348,51 +348,6 @@ function copyText(text){
 
 
 
-let deferredPrompt;
-
-const popup = document.getElementById("installPopup");
-const installBtn = document.getElementById("installNowBtn");
-const closeBtn = document.getElementById("closeBtn");
-
-/* ✅ Do not show popup if already dismissed */
-if (localStorage.getItem("installDismissed")) {
-  console.log("Popup already dismissed");
-}
-
-/* ✅ Listen for install prompt */
-window.addEventListener("beforeinstallprompt", (e) => {
-
-  if (localStorage.getItem("installDismissed")) return;
-
-  e.preventDefault();
-  deferredPrompt = e;
-
-  popup.style.display = "flex";
-});
-
-/* ✅ Install Click */
-installBtn.addEventListener("click", async () => {
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-
-  popup.style.display = "none";
-});
-
-/* ✅ Later Click */
-closeBtn.addEventListener("click", () => {
-  popup.style.display = "none";
-
-  // ✅ Never show again
-  localStorage.setItem("installDismissed", "true");
-});
-
-/* ✅ After Successful Install */
-window.addEventListener("appinstalled", () => {
-  console.log("✅ App Installed");
-
-  popup.style.display = "none";
-  localStorage.setItem("installDismissed", "true");
-});
 </script>
 
 </body>
