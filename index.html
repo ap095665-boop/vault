@@ -34,21 +34,6 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
 }
 .entryTitle::-webkit-scrollbar{display:none}
 
-/* open button */
-.openBtn{
- position:absolute;
- right:12px;
- top:50%;
- transform:translateY(-50%);
- background:#111;
- color:#00ff88;
- padding:10px 16px;
- border-radius:10px;
- border:none;
- transition:.15s;
-}
-.openBtn:active{transform:translateY(-50%) scale(.95)}
-
 /* inputs */
 input{
  width:90%;
@@ -193,8 +178,9 @@ function loadEntries(){
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
   <div class="entryCard" data-index="${i}">
-    <div class="entryTitle"><span class="cyberText">${title}</span></div>
-    <button class="openBtn" onclick="viewEntry(${i})">Open</button>
+    <div class="entryTitle" ondblclick="viewEntry(${i})">
+      <span class="cyberText">${title}</span>
+    </div>
   </div>`;
  });
 
