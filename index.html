@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html>
+<!DOCTYPE html><html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
@@ -21,7 +20,7 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  color:#000;
  overflow:hidden;
  transition: transform .18s ease, box-shadow .18s ease;
- touch-action: pan-y;
+ touch-action:pan-y;
 }
 
 /* TITLE scroll if long */
@@ -49,22 +48,6 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  transition:.15s;
 }
 .openBtn:active{transform:translateY(-50%) scale(.95)}
-
-/* swipe delete background */
-.swipeDelete{
- position:absolute;
- top:0;
- right:0;
- bottom:0;
- width:100%;
- background:#ff4d4d;
- display:flex;
- align-items:center;
- justify-content:flex-end;
- padding-right:20px;
- font-weight:bold;
- color:#fff;
-}
 
 /* inputs */
 input{
@@ -210,7 +193,6 @@ function loadEntries(){
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
   <div class="entryCard" data-index="${i}">
-    <div class="swipeDelete">Delete</div>
     <div class="entryTitle"><span class="cyberText">${title}</span></div>
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
   </div>`;
@@ -220,13 +202,14 @@ function loadEntries(){
 
  startScanAnimation();
  disableTypingAfterLoad();
- enableSwipeDelete();
+ enableSwipe();
 }
 
 function startScanAnimation(){
  const cards=document.querySelectorAll(".entryCard");
  cards.forEach((card,index)=>{
-  setTimeout(()=>{ card.classList.add("scan");
+  setTimeout(()=>{
+   card.classList.add("scan");
    setTimeout(()=>card.classList.remove("scan"),1200);
   }, index*250);
  });
@@ -241,54 +224,52 @@ function disableTypingAfterLoad(){
  },1400);
 }
 
-/* SWIPE DELETE */
+/* SWIPE RIGHT DELETE */
 
-function enableSwipeDelete(){
+function enableSwipe(){
 
  document.querySelectorAll(".entryCard").forEach(card=>{
 
   let startX=0;
-  let currentX=0;
+  let moveX=0;
 
   card.addEventListener("touchstart",e=>{
-    startX=e.touches[0].clientX;
+   startX=e.touches[0].clientX;
   });
 
   card.addEventListener("touchmove",e=>{
-    currentX=e.touches[0].clientX;
-    let diff=currentX-startX;
-
-    if(diff>0){
-      card.style.transform=`translateX(${diff}px)`;
-    }
+   moveX=e.touches[0].clientX-startX;
+   if(moveX>0){
+    card.style.transform=`translateX(${moveX}px)`;
+   }
   });
 
-  card.addEventListener("touchend",async e=>{
-    let diff=currentX-startX;
+  card.addEventListener("touchend",async ()=>{
 
-    if(diff>140){
+   if(moveX>150){
 
-      let index=card.dataset.index;
+    let index=card.dataset.index;
 
-      if(!confirm("Delete permanently?")){
-        card.style.transform="translateX(0)";
-        return;
-      }
-
-      if(actionLock) return;
-      actionLock=true;
-
-      vaultMemory.entries.splice(index,1);
-
-      await saveVault();
-
-      loadEntries();
-
-      actionLock=false;
-
-    }else{
-      card.style.transform="translateX(0)";
+    if(!confirm("Delete permanently?")){
+     card.style.transform="translateX(0)";
+     return;
     }
+
+    if(actionLock) return;
+    actionLock=true;
+
+    vaultMemory.entries.splice(index,1);
+    await saveVault();
+    loadEntries();
+
+    actionLock=false;
+
+   }else{
+    card.style.transform="translateX(0)";
+   }
+
+   moveX=0;
+
   });
 
  });
