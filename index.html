@@ -1,4 +1,5 @@
-<!DOCTYPE html><html>
+<!DOCTYPE html>
+<html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Secure Vault</title>
@@ -20,6 +21,7 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  color:#000;
  overflow:hidden;
  transition: transform .18s ease, box-shadow .18s ease;
+ touch-action: pan-y;
 }
 
 /* TITLE scroll if long */
@@ -33,13 +35,12 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
 }
 .entryTitle::-webkit-scrollbar{display:none}
 
-/* prevent buttons shrink */
-.openBtn{flex-shrink:0}
-.deleteEdge{flex-shrink:0}
-
 /* open button */
 .openBtn{
- margin-right:60px;
+ position:absolute;
+ right:12px;
+ top:50%;
+ transform:translateY(-50%);
  background:#111;
  color:#00ff88;
  padding:10px 16px;
@@ -47,18 +48,22 @@ body{background:#000;color:#00ff88;font-family:monospace;margin:0;text-align:cen
  border:none;
  transition:.15s;
 }
-.openBtn:active{transform:scale(.95)}
+.openBtn:active{transform:translateY(-50%) scale(.95)}
 
-/* delete */
-.deleteEdge{
+/* swipe delete background */
+.swipeDelete{
  position:absolute;
- right:12px;
- top:50%;
- transform:translateY(-50%);
- background:none;
- border:none;
- font-size:22px;
- color:#ff4d4d;
+ top:0;
+ right:0;
+ bottom:0;
+ width:100%;
+ background:#ff4d4d;
+ display:flex;
+ align-items:center;
+ justify-content:flex-end;
+ padding-right:20px;
+ font-weight:bold;
+ color:#fff;
 }
 
 /* inputs */
@@ -204,16 +209,18 @@ function loadEntries(){
  vaultMemory.entries.forEach((e,i)=>{
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
-  <div class="entryCard">
+  <div class="entryCard" data-index="${i}">
+    <div class="swipeDelete">Delete</div>
     <div class="entryTitle"><span class="cyberText">${title}</span></div>
     <button class="openBtn" onclick="viewEntry(${i})">Open</button>
-    <button class="deleteEdge" onclick="deleteEntry(${i})">Del</button>
   </div>`;
  });
 
  dataArea.innerHTML=html;
+
  startScanAnimation();
  disableTypingAfterLoad();
+ enableSwipeDelete();
 }
 
 function startScanAnimation(){
@@ -232,6 +239,60 @@ function disableTypingAfterLoad(){
      el.style.animation="none";
    });
  },1400);
+}
+
+/* SWIPE DELETE */
+
+function enableSwipeDelete(){
+
+ document.querySelectorAll(".entryCard").forEach(card=>{
+
+  let startX=0;
+  let currentX=0;
+
+  card.addEventListener("touchstart",e=>{
+    startX=e.touches[0].clientX;
+  });
+
+  card.addEventListener("touchmove",e=>{
+    currentX=e.touches[0].clientX;
+    let diff=currentX-startX;
+
+    if(diff>0){
+      card.style.transform=`translateX(${diff}px)`;
+    }
+  });
+
+  card.addEventListener("touchend",async e=>{
+    let diff=currentX-startX;
+
+    if(diff>140){
+
+      let index=card.dataset.index;
+
+      if(!confirm("Delete permanently?")){
+        card.style.transform="translateX(0)";
+        return;
+      }
+
+      if(actionLock) return;
+      actionLock=true;
+
+      vaultMemory.entries.splice(index,1);
+
+      await saveVault();
+
+      loadEntries();
+
+      actionLock=false;
+
+    }else{
+      card.style.transform="translateX(0)";
+    }
+  });
+
+ });
+
 }
 
 /* SEARCH */
@@ -285,7 +346,7 @@ async function saveEntry(){
  actionLock=false;
 }
 
-/* VIEW ENTRY — DOUBLE TAP COPY */
+/* VIEW ENTRY */
 
 function viewEntry(i){
  let entry=vaultMemory.entries[i];
@@ -306,19 +367,7 @@ function viewEntry(i){
 function closeView(){ viewPopup.style.display="none";}
 function editEntry(){ let entry=vaultMemory.entries[editIndex]; rows.innerHTML=""; entry.rows.forEach(r=>addRow(r.label,r.value)); viewPopup.style.display="none"; addPopup.style.display="block";}
 
-/* DELETE */
-
-async function deleteEntry(i){
- if(actionLock) return;
- if(!confirm("Delete permanently?")) return;
- actionLock=true;
- vaultMemory.entries.splice(i,1);
- await saveVault();
- loadEntries();
- actionLock=false;
-}
-
-/* COPY GESTURE */
+/* COPY */
 
 function copyText(text){
  navigator.clipboard.writeText(text);
@@ -339,14 +388,12 @@ function copyText(text){
 
  setTimeout(()=>toast.remove(),1200);
 }
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./sw.js")
-      .then(() => console.log("Service Worker Registered ✅"))
-      .catch((error) => console.log("SW Error ❌", error));
-  };
 
-
-
+if ("serviceWorker" in navigator) {
+ navigator.serviceWorker.register("./sw.js")
+ .then(() => console.log("Service Worker Registered ✅"))
+ .catch((error) => console.log("SW Error ❌", error));
+}
 
 </script>
 
