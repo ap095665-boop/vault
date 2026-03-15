@@ -178,7 +178,7 @@ function loadEntries(){
   let title=e.rows?.[0]?.value || "Untitled";
   html+=`
   <div class="entryCard" data-index="${i}">
-    <div class="entryTitle" ondblclick="viewEntry(${i})">
+    <div class="entryTitle" data-index="${i}">
       <span class="cyberText">${title}</span>
     </div>
   </div>`;
@@ -218,6 +218,26 @@ function enableSwipe(){
 
   let startX=0;
   let moveX=0;
+  let lastTap=0;
+
+  const title=card.querySelector(".entryTitle");
+  const index=card.dataset.index;
+
+  /* DOUBLE TAP OPEN */
+
+  title.addEventListener("touchend",function(e){
+
+    const now=Date.now();
+
+    if(now-lastTap<300){
+        viewEntry(index);
+    }
+
+    lastTap=now;
+
+  });
+
+  /* SWIPE DELETE */
 
   card.addEventListener("touchstart",e=>{
    startX=e.touches[0].clientX;
@@ -225,8 +245,9 @@ function enableSwipe(){
 
   card.addEventListener("touchmove",e=>{
    moveX=e.touches[0].clientX-startX;
+
    if(moveX>0){
-    card.style.transform=`translateX(${moveX}px)`;
+     card.style.transform=`translateX(${moveX}px)`;
    }
   });
 
@@ -234,10 +255,9 @@ function enableSwipe(){
 
    if(moveX>150){
 
-    let index=card.dataset.index;
-
     if(!confirm("Delete permanently?")){
      card.style.transform="translateX(0)";
+     moveX=0;
      return;
     }
 
@@ -245,13 +265,14 @@ function enableSwipe(){
     actionLock=true;
 
     vaultMemory.entries.splice(index,1);
+
     await saveVault();
     loadEntries();
 
     actionLock=false;
 
    }else{
-    card.style.transform="translateX(0)";
+     card.style.transform="translateX(0)";
    }
 
    moveX=0;
